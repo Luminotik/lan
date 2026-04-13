@@ -1,8 +1,11 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import cron from 'node-cron';
+
 import configRouter from './routes/config.js';
 import gamesRouter from './routes/games.js';
 import attendeesRouter from './routes/attendees.js';
+import { refreshGames, refreshAttendees } from './jobs/refresh.js';
 
 dotenv.config();
 
@@ -17,4 +20,10 @@ app.use('/api/attendees', attendeesRouter);
 
 app.listen(PORT, () => {
 	console.log(`Server running on port ${PORT}`);
+});
+
+// Run every 6 hours
+cron.schedule('0 */6 * * *', () => {
+	refreshGames();
+	refreshAttendees();
 });
