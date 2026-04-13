@@ -5,6 +5,9 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
 	try {
+		const configResult = await pool.query('SELECT show_inactive_attendees FROM config LIMIT 1');
+		const { show_inactive_attendees } = configResult.rows[0];
+
 		const result = await pool.query(
 			`SELECT id, 
                     steam_id, 
@@ -20,7 +23,7 @@ router.get('/', async (req, res) => {
 
              FROM   attendees 
 
-             WHERE  active = true
+             ${show_inactive_attendees ? '' : 'WHERE	active = true'}
 
              ORDER BY   role ASC, 
                         level DESC,
@@ -36,6 +39,9 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
 	try {
+		const configResult = await pool.query('SELECT show_inactive_attendees FROM config LIMIT 1');
+		const { show_inactive_attendees } = configResult.rows[0];
+
 		const result = await pool.query(
 			`SELECT id, 
                     steam_id, 
@@ -52,7 +58,7 @@ router.get('/:id', async (req, res) => {
              FROM   attendees 
 
              WHERE  id     = $1
-			 AND	active = true`,
+			 ${show_inactive_attendees ? '' : 'AND	active = true'}`,
 			[req.params.id]
 		);
 		if (result.rows.length === 0) {

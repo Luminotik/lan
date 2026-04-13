@@ -6,17 +6,19 @@ const SIX_HOURS = 6 * 60 * 60 * 1000;
 async function getApiConfig() {
 	const [steamResult, itadResult] = await Promise.all([
 		pool.query('SELECT * FROM api_steam LIMIT 1'),
-		pool.query('SELECT * FROM api_itad LIMIT 1')
+		pool.query('SELECT * FROM api_itad LIMIT 1'),
+		pool.query('SELECT update_inactive_games, update_inactive_attendees FROM config LIMIT 1')
 	]);
 	return {
 		steam: steamResult.rows[0],
-		itad: itadResult.rows[0]
+		itad: itadResult.rows[0],
+		flags: configResult.rows[0]
 	};
 }
 
 export async function refreshGames() {
 	console.log('[refresh] Checking games for stale data...');
-	const { steam, itad } = await getApiConfig();
+	const { steam, itad, flags } = await getApiConfig();
 	const now = Date.now();
 
 	const { rows: games } = await pool.query(
@@ -28,7 +30,8 @@ export async function refreshGames() {
 
 		 FROM	games
 
-		 WHERE	last_update < $1`,
+		 WHERE	last_update < $1
+		 ${flags.update_inactive_games ? '' : 'AND	active = true'}`,
 		[now - SIX_HOURS]
 	);
 
@@ -122,7 +125,7 @@ export async function refreshGames() {
 
 export async function refreshAttendees() {
 	console.log('[refresh] Checking attendees for stale data...');
-	const { steam } = await getApiConfig();
+	const { steam, flags } = await getApiConfig();
 	const now = Date.now();
 
 	const { rows: attendees } = await pool.query(
@@ -132,7 +135,9 @@ export async function refreshAttendees() {
 		 FROM	attendees
 
 		 WHERE	last_update < $1
-		 AND	steam_id    IS NOT NULL`,
+		 AND	steam_id    IS NOT NULL
+		 AND	steam_id    != ''
+		 ${flags.update_inactive_attendees ? '' : 'AND	active = true'}`,
 		[now - SIX_HOURS]
 	);
 

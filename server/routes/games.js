@@ -5,6 +5,9 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
     try {
+        const configResult = await pool.query('SELECT show_inactive_games FROM config LIMIT 1');
+        const { show_inactive_games } = configResult.rows[0];
+
         const result = await pool.query(
             `SELECT id,
                     steam_appid,
@@ -19,7 +22,7 @@ router.get('/', async (req, res) => {
 
              FROM   games
 
-             WHERE  active = true
+             ${show_inactive_games ? '' : 'WHERE    active = true'}
 
              ORDER BY   priority ASC,
                         price_new ASC,
@@ -38,6 +41,9 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
+        const configResult = await pool.query('SELECT show_inactive_games FROM config LIMIT 1');
+        const { show_inactive_games } = configResult.rows[0];
+
         const result = await pool.query(
             `SELECT id,
                     steam_appid,
@@ -53,7 +59,7 @@ router.get('/:id', async (req, res) => {
              FROM   games
 
              WHERE  id     = $1
-             AND    active = true`,
+             ${show_inactive_games ? '' : 'AND  active = true'}`,
             [req.params.id]
         );
         if (result.rows.length === 0) {

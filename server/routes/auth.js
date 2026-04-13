@@ -14,6 +14,7 @@ router.post('/login', async (req, res) => {
 	const valid = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
 
 	if (!valid) {
+		console.log(`[auth] Failed auth attempt`);
 		return res.status(401).json({ error: 'Invalid password' });
 	}
 

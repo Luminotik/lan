@@ -1,6 +1,7 @@
 // External packages
 import express from 'express';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 import cron from 'node-cron';
 
 // Internal modules
@@ -18,11 +19,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const loginLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 10,                   // 10 attempts per window
+	message: { error: 'Too many login attempts, please try again later' }
+});
+
 app.use(express.json());
 
 app.use('/api/config', configRouter);
 app.use('/api/games', gamesRouter);
 app.use('/api/attendees', attendeesRouter);
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin/games', adminGamesRouter);
 app.use('/api/admin/attendees', adminAttendeesRouter);
