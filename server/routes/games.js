@@ -25,7 +25,11 @@ router.get('/', async (req, res) => {
                         price_new ASC,
                         name ASC`
         );
-        res.json(result.rows);
+        res.json(result.rows.map(game => ({
+            ...game,
+            price_old: parseFloat(game.price_old),
+            price_new: parseFloat(game.price_new)
+        })));
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Database error' });
