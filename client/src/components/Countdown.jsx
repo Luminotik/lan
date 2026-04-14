@@ -30,7 +30,7 @@ const Countdown = ({ eventDate }) => {
 	if (!timeLeft) return null;
 
 	return (
-		<h4 className="event-countdown">
+		<h2 className="event-countdown">
 			<div className="date">{new Date(eventDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')}</div>
 			<div>
 				<span className="days">{String(timeLeft.days).padStart(2, '0')}d </span>
@@ -38,7 +38,7 @@ const Countdown = ({ eventDate }) => {
 				<span className="minutes">{String(timeLeft.minutes).padStart(2, '0')}m </span>
 				<span className="seconds">{String(timeLeft.seconds).padStart(2, '0')}s</span>
 			</div>
-		</h4>
+		</h2>
 	);
 };
 

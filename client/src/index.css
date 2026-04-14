@@ -59,29 +59,6 @@ h6 {
 	font-weight: bold;
 }
 
-h1 {
-	font-size: 2.5rem;
-}
-
-h2 {
-	font-size: 2.25rem;
-}
-
-h3 {
-	font-size: 2rem;
-}
-
-h4 {
-	font-size: 1.75rem;
-}
-
-h5 {
-	font-size: 1.5rem;
-}
-
-h6 {
-	font-size: 1.25rem;
-}
 
 /* Helpers */
 .text-light {
@@ -97,11 +74,11 @@ h6 {
 }
 
 .text-blue {
-	color: #63d2ff
+	color: #63d2ff;
 }
 
 .text-yellow {
-	color: #fedd4c
+	color: #fedd4c;
 }
 
 
@@ -114,8 +91,7 @@ h6 {
 .event-countdown .days,
 .event-countdown .hours,
 .event-countdown .minutes,
-.event-countdown .seconds,
-.event-countdown .milliseconds {
+.event-countdown .seconds {
 	font-size: 0.7em;
 	opacity: 0.7;
 }
@@ -134,6 +110,7 @@ h6 {
 .container-header .header-inner {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	max-width: 1140px;
 	margin: 0 auto;
 	padding: 3rem 1rem;
@@ -153,34 +130,11 @@ h6 {
 	z-index: -1;
 }
 
-.container-header .text-yellow {
-	position: absolute;
-	top: -0.25em;
-	margin-left: 0.7em;
-	font-size: 0.4em;
-	transform: rotate(-20deg);
-}
-
-.container-header .text-yellow:after {
-	font-family: "Font Awesome 5 Free";
-	font-weight: 900;
-	content: "\f064";
-	position: absolute;
-	left: -1em;
-	top: 0.5em;
-	font-size: 1em;
-	transform: scale(-1, 1) rotate(100deg);
-}
-
 
 /* MOTD */
 .container-motd {
 	background: #232a34;
 	padding: 2rem 0;
-}
-
-.container-motd .page-container {
-	padding: 0 1rem;
 }
 
 .wrapper-warning {
@@ -248,7 +202,6 @@ h6 {
 .game-banner {
 	height: 100%;
 	width: 100%;
-	/*min-height: 4em;*/
 	display: block;
 	object-fit: cover;
 }
@@ -277,18 +230,18 @@ h6 {
 }
 
 .game-detail-price>div {
-	padding-left: 0.5rem
+	padding-left: 0.5rem;
 }
 
 .game-detail-price-standard,
 .game-detail-price-old {
-	color: #ffd700
+	color: #ffd700;
 }
 
 .game-detail-price-standard:before,
 .game-detail-price-old:before,
 .game-detail-price-new:before {
-	content: "$"
+	content: "$";
 }
 
 .game-detail-price-free {
@@ -296,12 +249,8 @@ h6 {
 	text-transform: uppercase;
 }
 
-.game-detail-price-free:before {
-	content: ""
-}
-
 .game-detail-price-free:after {
-	content: "!"
+	content: "!";
 }
 
 .game-detail-price-old {
@@ -311,7 +260,7 @@ h6 {
 }
 
 .game-detail-price-new {
-	color: #00ff00
+	color: #00ff00;
 }
 
 .game-detail-price-gamepass {
@@ -339,7 +288,7 @@ h6 {
 
 /* Attendees */
 .container-attendees {
-	background: #111a22
+	background: #111a22;
 }
 
 .attendees-grid {
@@ -372,7 +321,7 @@ h6 {
 }
 
 .attendee.attendee-inactive {
-	opacity: 0.4
+	opacity: 0.4;
 }
 
 .attendee.attendee-role-1 .attendee-persona:before,
@@ -386,15 +335,15 @@ h6 {
 }
 
 .attendee.attendee-role-1 .attendee-persona:before {
-	content: "\f521"
+	content: "\f521";
 }
 
 .attendee.attendee-new .attendee-persona:before {
-	content: "\f234"
+	content: "\f234";
 }
 
 .attendee.attendee-questionable .attendee-persona:before {
-	content: "\f059"
+	content: "\f059";
 }
 
 .attendee.attendee-role-1 .attendee-persona,
@@ -473,31 +422,31 @@ h6 {
 
 .attendee.attendee-role-1 .attendee-avatar img,
 .attendee.attendee-role-2.attendee-level-3 .attendee-avatar img {
-	border-color: #ae95dc
+	border-color: #ae95dc;
 }
 
 .attendee.attendee-role-2.attendee-level-2 .attendee-avatar img {
-	border-color: #2ba5e1
+	border-color: #2ba5e1;
 }
 
 .attendee.attendee-role-2.attendee-level-1 .attendee-avatar img {
-	border-color: #6addef
+	border-color: #6addef;
 }
 
 .attendee.attendee-role-3.attendee-level-3 .attendee-avatar img {
-	border-color: #d3c749
+	border-color: #d3c749;
 }
 
 .attendee.attendee-role-3.attendee-level-2 .attendee-avatar img {
-	border-color: #d2d6db
+	border-color: #d2d6db;
 }
 
 .attendee.attendee-role-3.attendee-level-1 .attendee-avatar img {
-	border-color: #d39850
+	border-color: #d39850;
 }
 
 .attendee .attendee-avatar a:hover img {
-	border: 3px solid #ffd700 !important
+	border: 3px solid #ffd700 !important;
 }
 
 
@@ -507,26 +456,14 @@ h6 {
 	padding-bottom: 3rem;
 }
 
-.embed-youtube {
-	position: relative;
-	width: 100%;
-	padding-top: 56.25%;
-}
-
-.embed-youtube iframe {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-}
-
+.embed-youtube,
 .embed-twitch {
 	position: relative;
 	width: 100%;
 	padding-top: 56.25%;
 }
 
+.embed-youtube iframe,
 .embed-twitch iframe,
 .embed-twitch #twitch-embed {
 	position: absolute;
@@ -544,7 +481,7 @@ h6 {
 }
 
 .container-footer a {
-	color: #2ba5e1
+	color: #2ba5e1;
 }
 
 .footer-inner {
@@ -562,7 +499,25 @@ h6 {
 }
 
 
-/* Admin Login */
+/* Admin — shared */
+.admin-error {
+	color: #ff6b6b;
+	font-size: 0.875rem;
+}
+
+.admin-success {
+	color: #00ff00;
+	font-size: 0.9rem;
+	opacity: 0.8;
+}
+
+.admin-loading {
+	opacity: 0.5;
+	padding: 2rem 0;
+}
+
+
+/* Admin — login */
 .admin-login {
 	min-height: 100vh;
 	display: flex;
@@ -609,10 +564,6 @@ h6 {
 	outline: none;
 }
 
-.admin-login-box input:focus {
-	border-color: #63d2ff;
-}
-
 .admin-login-box button {
 	background: #63d2ff;
 	color: #05090d;
@@ -620,8 +571,6 @@ h6 {
 	border-radius: 0.25rem;
 	padding: 0.65rem;
 	font-size: 1rem;
-	font-family: "Nexa";
-	font-weight: bold;
 	cursor: pointer;
 	transition: opacity 0.2s;
 }
@@ -631,13 +580,8 @@ h6 {
 	cursor: not-allowed;
 }
 
-.admin-error {
-	color: #ff6b6b;
-	font-size: 0.875rem;
-}
 
-
-/* Admin Layout */
+/* Admin — layout */
 .admin-layout {
 	display: flex;
 	min-height: 100vh;
@@ -695,7 +639,6 @@ h6 {
 	cursor: pointer;
 	opacity: 0.6;
 	transition: opacity 0.2s;
-	font-family: "Nexa";
 }
 
 .admin-logout:hover {
@@ -709,7 +652,7 @@ h6 {
 }
 
 
-/* Admin Sections */
+/* Admin — sections */
 .admin-section-header {
 	display: flex;
 	align-items: center;
@@ -769,13 +712,12 @@ h6 {
 	border-radius: 0.25rem;
 	border: none;
 	cursor: pointer;
-	font-family: "Nexa";
 	font-size: 0.85rem;
 	transition: opacity 0.2s;
 }
 
 .admin-btn:hover {
-	opacity: 0.8
+	opacity: 0.8;
 }
 
 .admin-btn-primary {
@@ -811,13 +753,8 @@ h6 {
 	opacity: 1;
 }
 
-.admin-loading {
-	opacity: 0.5;
-	padding: 2rem 0;
-}
 
-
-/* Admin Modal */
+/* Admin — modal and forms */
 .admin-modal-overlay {
 	position: fixed;
 	inset: 0;
@@ -848,27 +785,43 @@ h6 {
 	gap: 0.5rem;
 }
 
+.admin-form h3 {
+	color: #63d2ff;
+	margin-top: 1rem;
+}
+
 .admin-form label {
 	font-size: 0.8rem;
 	opacity: 0.6;
 	margin-top: 0.5rem;
 }
 
-.admin-form input[type="text"],
-.admin-form input[type="number"],
-.admin-form input:not([type="checkbox"]) {
+.admin-form input:not([type="checkbox"]),
+.admin-form select,
+.admin-form textarea {
 	background: #111a22;
 	border: 1px solid #2a3a4a;
 	border-radius: 0.25rem;
 	color: #eee;
 	padding: 0.6rem 0.75rem;
 	font-size: 0.95rem;
+	font-family: inherit;
 	outline: none;
 	width: 100%;
 }
 
-.admin-form input:focus {
+.admin-form input:not([type="checkbox"]):focus,
+.admin-form select:focus,
+.admin-form textarea:focus {
 	border-color: #63d2ff;
+}
+
+.admin-form textarea {
+	resize: vertical;
+}
+
+.admin-form-wide {
+	max-width: 560px;
 }
 
 .admin-form-checks {
@@ -891,53 +844,4 @@ h6 {
 	justify-content: flex-end;
 	gap: 0.75rem;
 	margin-top: 1rem;
-}
-
-.admin-form select {
-	background: #111a22;
-	border: 1px solid #2a3a4a;
-	border-radius: 0.25rem;
-	color: #eee;
-	padding: 0.6rem 0.75rem;
-	font-size: 0.95rem;
-	outline: none;
-	width: 100%;
-}
-
-.admin-form select:focus {
-	border-color: #63d2ff;
-}
-
-.admin-form-wide {
-	max-width: 560px;
-}
-
-.admin-form h3 {
-	font-size: 1rem;
-	color: #63d2ff;
-	margin-top: 1rem;
-	opacity: 1;
-}
-
-.admin-form textarea {
-	background: #111a22;
-	border: 1px solid #2a3a4a;
-	border-radius: 0.25rem;
-	color: #eee;
-	padding: 0.6rem 0.75rem;
-	font-size: 0.95rem;
-	outline: none;
-	width: 100%;
-	resize: vertical;
-	font-family: inherit;
-}
-
-.admin-form textarea:focus {
-	border-color: #63d2ff;
-}
-
-.admin-success {
-	color: #00ff00;
-	font-size: 0.9rem;
-	opacity: 0.8;
 }
