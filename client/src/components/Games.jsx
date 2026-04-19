@@ -11,7 +11,7 @@ const GameCard = ({ game }) => {
 		if (game.is_gamepass) {
 			return (
 				<div className="game-detail-price-gamepass">
-					<span className="game-detail-price-gamepass-logo">&#xEA04;</span><br />
+					<span className="game-detail-price-gamepass-logo"><i className="fab fa-xbox"></i></span><br />
 					<span className="game-detail-price-gamepass-brand-1">GAME PASS</span><br />
 					<span className="game-detail-price-gamepass-brand-2">FOR PC</span>
 				</div>

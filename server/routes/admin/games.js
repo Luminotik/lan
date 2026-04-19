@@ -2,8 +2,8 @@ import express from 'express';
 
 import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
-import { lookupItadId, getBestDeal } from '../lib/itad.js';
-import { getAppDetails } from '../lib/steam.js';
+import { lookupItadId, getBestDeal } from '../../lib/itad.js';
+import { getAppDetails } from '../../lib/steam.js';
 
 const router = express.Router();
 

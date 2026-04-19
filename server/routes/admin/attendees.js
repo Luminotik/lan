@@ -2,6 +2,7 @@ import express from 'express';
 
 import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { getPlayerSummaries } from '../../lib/steam.js';
 
 const router = express.Router();
 
@@ -98,5 +99,33 @@ router.delete('/:id', async (req, res) => {
 		res.status(500).json({ error: 'Database error' });
 	}
 });
+
+router.post('/lookup', async (req, res) => {
+	const { steam_id } = req.body;
+	if (!steam_id) {
+		return res.status(400).json({ error: 'Steam ID required' });
+	}
+
+	try {
+		const players = await getPlayerSummaries([steam_id]);
+
+		if (players.length === 0) {
+			return res.status(404).json({ error: 'Steam profile not found' });
+		}
+
+		const player = players[0];
+		res.json({
+			steam_id: player.steamid,
+			persona_name: player.personaname,
+			avatar: player.avatar,
+			avatar_medium: player.avatarmedium,
+			avatar_full: player.avatarfull
+		});
+	} catch (err) {
+		console.error('[admin/attendees/lookup]', err);
+		res.status(500).json({ error: 'Lookup failed' });
+	}
+});
+
 
 export default router;

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
+import PaginatedList from './PaginatedList';
+
 const emptyAttendee = {
 	steam_id: '',
 	first_name: '',
@@ -17,8 +19,48 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 	const [form, setForm] = useState(attendee);
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
+	const [validated, setValidated] = useState(!!attendee.id);
+	const [steamIdInput, setSteamIdInput] = useState(attendee.steam_id || '');
+	const [validating, setValidating] = useState(false);
 
 	const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+	const handleValidate = async () => {
+		if (!steamIdInput) {
+			setError('Steam ID or profile URL is required');
+			return;
+		}
+
+		// Extract Steam ID from profile URL if one was pasted
+		let steamId = steamIdInput.trim();
+		if (!/^\d+$/.test(steamId)) {
+			const match = steamId.match(/\/profiles\/(\d+)/);
+			if (!match) {
+				setError('Unable to parse Steam ID from input');
+				return;
+			}
+			steamId = match[1];
+		}
+
+		setValidating(true);
+		setError(null);
+		try {
+			const res = await api.post('/api/admin/attendees/lookup', { steam_id: steamId });
+			setForm({
+				...form,
+				...res.data,
+				active: form.active ?? true,
+				is_new: form.is_new ?? true,
+				role: form.role ?? 3,
+				level: form.level ?? 1,
+			});
+			setValidated(true);
+		} catch (err) {
+			setError(err.response?.data?.error || 'Validation failed');
+		} finally {
+			setValidating(false);
+		}
+	};
 
 	const handleSubmit = async () => {
 		setLoading(true);
@@ -42,46 +84,76 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 			<div className="admin-modal">
 				<h2>{form.id ? 'Edit Attendee' : 'Add Attendee'}</h2>
 				<div className="admin-form">
-					<label>Steam ID</label>
-					<input value={form.steam_id} onChange={e => set('steam_id', e.target.value)} />
+					{!validated ? (
+						<>
+							<label>Steam ID or Profile URL</label>
+							<div className="admin-form-inline">
+								<input
+									value={steamIdInput}
+									onChange={e => setSteamIdInput(e.target.value)}
+									placeholder="e.g. 76561198004630020 or https://steamcommunity.com/profiles/76561198004630020"
+									autoFocus
+								/>
+								<button
+									className="admin-btn admin-btn-primary"
+									onClick={handleValidate}
+									disabled={validating}
+								>
+									{validating ? 'Validating...' : 'Validate'}
+								</button>
+							</div>
+							{error && <div className="admin-error">{error}</div>}
+							<div className="admin-form-actions">
+								<button className="admin-btn admin-btn-secondary" onClick={onCancel}>Cancel</button>
+							</div>
+						</>
+					) : (
+						<>
+							<label>Steam ID</label>
+							<input value={form.steam_id || ''} disabled />
 
-					<label>First Name</label>
-					<input value={form.first_name} onChange={e => set('first_name', e.target.value)} />
+							<label>Persona Name</label>
+							<input value={form.persona_name || ''} disabled />
 
-					<label>Last Name</label>
-					<input value={form.last_name} onChange={e => set('last_name', e.target.value)} />
+							<label>First Name</label>
+							<input value={form.first_name || ''} onChange={e => set('first_name', e.target.value)} />
 
-					<label>Phone</label>
-					<input value={form.phone} onChange={e => set('phone', e.target.value)} />
+							<label>Last Name</label>
+							<input value={form.last_name || ''} onChange={e => set('last_name', e.target.value)} />
 
-					<label>Role</label>
-					<select value={form.role} onChange={e => set('role', parseInt(e.target.value))}>
-						<option value={1}>Host</option>
-						<option value={2}>Contributor</option>
-						<option value={3}>Standard</option>
-					</select>
+							<label>Phone</label>
+							<input value={form.phone || ''} onChange={e => set('phone', e.target.value)} />
 
-					<label>Level</label>
-					<select value={form.level} onChange={e => set('level', parseInt(e.target.value))}>
-						<option value={3}>3</option>
-						<option value={2}>2</option>
-						<option value={1}>1</option>
-					</select>
+							<label>Role</label>
+							<select value={form.role ?? 3} onChange={e => set('role', parseInt(e.target.value))}>
+								<option value={1}>Host</option>
+								<option value={2}>Contributor</option>
+								<option value={3}>Standard</option>
+							</select>
 
-					<div className="admin-form-checks">
-						<label><input type="checkbox" checked={form.active} onChange={e => set('active', e.target.checked)} /> Active</label>
-						<label><input type="checkbox" checked={form.is_new} onChange={e => set('is_new', e.target.checked)} /> New</label>
-						<label><input type="checkbox" checked={form.sms_notifications} onChange={e => set('sms_notifications', e.target.checked)} /> SMS</label>
-					</div>
+							<label>Level</label>
+							<select value={form.level ?? 1} onChange={e => set('level', parseInt(e.target.value))}>
+								<option value={3}>3</option>
+								<option value={2}>2</option>
+								<option value={1}>1</option>
+							</select>
 
-					{error && <div className="admin-error">{error}</div>}
+							<div className="admin-form-checks">
+								<label><input type="checkbox" checked={form.active ?? true} onChange={e => set('active', e.target.checked)} /> Active</label>
+								<label><input type="checkbox" checked={form.is_new || false} onChange={e => set('is_new', e.target.checked)} /> New</label>
+								<label><input type="checkbox" checked={form.sms_notifications || false} onChange={e => set('sms_notifications', e.target.checked)} /> SMS</label>
+							</div>
 
-					<div className="admin-form-actions">
-						<button className="admin-btn admin-btn-secondary" onClick={onCancel}>Cancel</button>
-						<button className="admin-btn admin-btn-primary" onClick={handleSubmit} disabled={loading}>
-							{loading ? 'Saving...' : 'Save'}
-						</button>
-					</div>
+							{error && <div className="admin-error">{error}</div>}
+
+							<div className="admin-form-actions">
+								<button className="admin-btn admin-btn-secondary" onClick={onCancel}>Cancel</button>
+								<button className="admin-btn admin-btn-primary" onClick={handleSubmit} disabled={loading}>
+									{loading ? 'Saving...' : 'Save'}
+								</button>
+							</div>
+						</>
+					)}
 				</div>
 			</div>
 		</div>
@@ -162,50 +234,51 @@ const AttendeesList = ({ token }) => {
 				<h2>Attendees</h2>
 				<button className="admin-btn admin-btn-primary" onClick={() => setEditing(emptyAttendee)}>Add Attendee</button>
 			</div>
-			<table className="admin-table">
-				<thead>
-					<tr>
-						<th>Attendee</th>
-						<th>Role</th>
-						<th>Level</th>
-						<th>Active</th>
-						<th>Actions</th>
+
+			<PaginatedList
+				items={attendees}
+				columns={[
+					{ label: 'Attendee', sortField: 'persona_name' },
+					{ label: 'Role', sortField: 'role' },
+					{ label: 'Level', sortField: 'level' },
+					{ label: 'Active', sortField: 'active' },
+					{ label: 'Actions', sortField: null }
+				]}
+				filterFields={["persona_name", "first_name", "last_name"]}
+				initialSortField="role"
+				initialSortDir="asc"
+				renderRow={attendee => (
+					<tr key={attendee.id} className={!attendee.active ? 'admin-row-inactive' : ''}>
+						<td>
+							<div className="admin-game-name">
+								{attendee.avatar_full && (
+									<img src={attendee.avatar_full} alt={attendee.persona_name} className="admin-avatar-thumb" />
+								)}
+								<div>
+									<div>{attendee.persona_name}</div>
+									<div className="text-ultralight">{attendee.first_name} {attendee.last_name}</div>
+								</div>
+							</div>
+						</td>
+						<td>{['', 'Host', 'Contributor', 'Standard'][attendee.role]}</td>
+						<td>{attendee.level}</td>
+						<td>
+							<button
+								className={`admin-toggle ${attendee.active ? 'active' : ''}`}
+								onClick={() => toggleActive(attendee)}
+							>
+								{attendee.active ? 'Active' : 'Inactive'}
+							</button>
+						</td>
+						<td>
+							<div className="admin-actions">
+								<button className="admin-btn admin-btn-secondary" onClick={() => setEditing(attendee)}>Edit</button>
+								<button className="admin-btn admin-btn-danger" onClick={() => deleteAttendee(attendee.id)}>Delete</button>
+							</div>
+						</td>
 					</tr>
-				</thead>
-				<tbody>
-					{attendees.map(attendee => (
-						<tr key={attendee.id} className={!attendee.active ? 'admin-row-inactive' : ''}>
-							<td>
-								<div className="admin-game-name">
-									{attendee.avatar_full && (
-										<img src={attendee.avatar_full} alt={attendee.persona_name} className="admin-avatar-thumb" />
-									)}
-									<div>
-										<div>{attendee.persona_name}</div>
-										<div className="text-ultralight">{attendee.first_name} {attendee.last_name}</div>
-									</div>
-								</div>
-							</td>
-							<td>{['', 'Host', 'Contributor', 'Standard'][attendee.role]}</td>
-							<td>{attendee.level}</td>
-							<td>
-								<button
-									className={`admin-toggle ${attendee.active ? 'active' : ''}`}
-									onClick={() => toggleActive(attendee)}
-								>
-									{attendee.active ? 'Active' : 'Inactive'}
-								</button>
-							</td>
-							<td>
-								<div className="admin-actions">
-									<button className="admin-btn admin-btn-secondary" onClick={() => setEditing(attendee)}>Edit</button>
-									<button className="admin-btn admin-btn-danger" onClick={() => deleteAttendee(attendee.id)}>Delete</button>
-								</div>
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
+				)}
+			/>
 		</div>
 	);
 };

@@ -665,6 +665,44 @@ h6 {
 }
 
 
+/* Admin - pagination */
+.admin-list-controls {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+.admin-search {
+	flex: 1;
+	max-width: 300px;
+	background: #111a22;
+	border: 1px solid #2a3a4a;
+	border-radius: 0.25rem;
+	color: #eee;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.95rem;
+	outline: none;
+}
+
+.admin-search:focus {
+	border-color: #63d2ff;
+}
+
+.admin-list-count {
+	opacity: 0.5;
+	font-size: 0.85rem;
+}
+
+.admin-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 1rem;
+	margin-top: 1rem;
+}
+
+
 /* Admin — sections */
 .admin-section-header {
 	display: flex;
@@ -676,7 +714,6 @@ h6 {
 .admin-table {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: 0.95rem;
 }
 
 .admin-table th {
@@ -691,6 +728,20 @@ h6 {
 	padding: 0.65rem 0.75rem;
 	border-bottom: 1px solid #1a2633;
 	vertical-align: middle;
+}
+
+.admin-th-sortable {
+	cursor: pointer;
+	user-select: none;
+}
+
+.admin-th-sortable:hover {
+	color: #fff;
+}
+
+.admin-sort-indicator {
+	font-size: 0.7em;
+	opacity: 0.7;
 }
 
 .admin-row-inactive td {
@@ -725,7 +776,6 @@ h6 {
 	border-radius: 0.25rem;
 	border: none;
 	cursor: pointer;
-	font-size: 0.85rem;
 	transition: opacity 0.2s;
 }
 
@@ -829,6 +879,11 @@ h6 {
 	border-color: #63d2ff;
 }
 
+.admin-form input:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
 .admin-form textarea {
 	resize: vertical;
 }
@@ -857,4 +912,13 @@ h6 {
 	justify-content: flex-end;
 	gap: 0.75rem;
 	margin-top: 1rem;
+}
+
+.admin-form-inline {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.admin-form-inline input {
+	flex: 1;
 }

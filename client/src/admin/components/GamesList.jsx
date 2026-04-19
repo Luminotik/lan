@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
+import PaginatedList from './PaginatedList';
+
 const emptyGame = {
 	steam_appid: '',
 	itad_id: '',
@@ -20,10 +22,53 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 	const [form, setForm] = useState(game);
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
+	const [validated, setValidated] = useState(!!game.id); // Existing games are pre-validated
+	const [appIdInput, setAppIdInput] = useState(game.steam_appid || '');
+	const [validating, setValidating] = useState(false);
 
 	const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
+	const handleValidate = async () => {
+		if (!appIdInput) {
+			setError('Steam App ID or Store URL is required');
+			return;
+		}
+
+		// Extract app ID from URL if one was pasted
+		let appId = appIdInput.trim();
+		if (!/^\d+$/.test(appId)) {
+			const match = appId.match(/\/app\/(\d+)/);
+			if (!match) {
+				setError('Unable to parse Steam App ID from input');
+				return;
+			}
+			appId = match[1];
+		}
+
+		setValidating(true);
+		setError(null);
+		try {
+			const res = await api.post('/api/admin/games/lookup', { steam_appid: appId });
+			setForm({
+				...form,
+				...res.data,
+				priority: form.priority ?? 999,
+				active: form.active ?? true
+			});
+			setValidated(true);
+		} catch (err) {
+			setError(err.response?.data?.error || 'Validation failed');
+		} finally {
+			setValidating(false);
+		}
+	};
+
 	const handleSubmit = async () => {
+		if (form.is_gamepass && !form.gamepass_url) {
+			setError('Game Pass URL is required when Game Pass is enabled');
+			return;
+		}
+
 		setLoading(true);
 		setError(null);
 		try {
@@ -45,51 +90,78 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 			<div className="admin-modal">
 				<h2>{form.id ? 'Edit Game' : 'Add Game'}</h2>
 				<div className="admin-form">
-					<label>Name</label>
-					<input value={form.name} onChange={e => set('name', e.target.value)} />
-
-					<label>Steam App ID</label>
-					<input value={form.steam_appid} onChange={e => set('steam_appid', e.target.value)} />
-
-					<label>ITAD ID</label>
-					<input value={form.itad_id} onChange={e => set('itad_id', e.target.value)} />
-
-					<label>Header Image URL</label>
-					<input value={form.header_image} onChange={e => set('header_image', e.target.value)} />
-
-					<label>Store URL</label>
-					<input value={form.url} onChange={e => set('url', e.target.value)} />
-
-					<label>Price (Regular)</label>
-					<input type="number" value={form.price_old} onChange={e => set('price_old', e.target.value)} />
-
-					<label>Price (Current)</label>
-					<input type="number" value={form.price_new} onChange={e => set('price_new', e.target.value)} />
-
-					<label>Priority</label>
-					<input type="number" value={form.priority} onChange={e => set('priority', e.target.value)} />
-
-					<div className="admin-form-checks">
-						<label><input type="checkbox" checked={form.is_free} onChange={e => set('is_free', e.target.checked)} /> Free</label>
-						<label><input type="checkbox" checked={form.is_gamepass} onChange={e => set('is_gamepass', e.target.checked)} /> Game Pass</label>
-						<label><input type="checkbox" checked={form.active} onChange={e => set('active', e.target.checked)} /> Active</label>
-					</div>
-
-					{form.is_gamepass && (
+					{!validated ? (
 						<>
-							<label>Game Pass URL</label>
-							<input value={form.gamepass_url} onChange={e => set('gamepass_url', e.target.value)} />
+							<label>Steam App ID or Store URL</label>
+							<div className="admin-form-inline">
+								<input
+									value={appIdInput}
+									onChange={e => setAppIdInput(e.target.value)}
+									placeholder="e.g. 228380 or https://store.steampowered.com/app/228380/"
+									autoFocus
+								/>
+								<button
+									className="admin-btn admin-btn-primary"
+									onClick={handleValidate}
+									disabled={validating}
+								>
+									{validating ? 'Validating...' : 'Validate'}
+								</button>
+							</div>
+							{error && <div className="admin-error">{error}</div>}
+							<div className="admin-form-actions">
+								<button className="admin-btn admin-btn-secondary" onClick={onCancel}>Cancel</button>
+							</div>
+						</>
+					) : (
+						<>
+							<label>Name</label>
+							<input value={form.name || ''} onChange={e => set('name', e.target.value)} />
+
+							<label>Steam App ID</label>
+							<input value={form.steam_appid || ''} disabled />
+
+							<label>ITAD ID</label>
+							<input value={form.itad_id || ''} disabled />
+
+							<label>Header Image URL</label>
+							<input value={form.header_image || ''} onChange={e => set('header_image', e.target.value)} />
+
+							<label>Store URL</label>
+							<input value={form.url || ''} disabled />
+
+							<label>Price (Regular)</label>
+							<input type="number" value={form.price_old ?? ''} disabled />
+
+							<label>Price (Current)</label>
+							<input type="number" value={form.price_new ?? ''} disabled />
+
+							<label>Priority</label>
+							<input type="number" value={form.priority ?? 999} onChange={e => set('priority', parseInt(e.target.value))} />
+
+							<div className="admin-form-checks">
+								<label><input type="checkbox" checked={form.is_free || false} disabled /> Free</label>
+								<label><input type="checkbox" checked={form.is_gamepass || false} onChange={e => set('is_gamepass', e.target.checked)} /> Game Pass</label>
+								<label><input type="checkbox" checked={form.active ?? true} onChange={e => set('active', e.target.checked)} /> Active</label>
+							</div>
+
+							{form.is_gamepass && (
+								<>
+									<label>Game Pass URL</label>
+									<input value={form.gamepass_url || ''} onChange={e => set('gamepass_url', e.target.value)} />
+								</>
+							)}
+
+							{error && <div className="admin-error">{error}</div>}
+
+							<div className="admin-form-actions">
+								<button className="admin-btn admin-btn-secondary" onClick={onCancel}>Cancel</button>
+								<button className="admin-btn admin-btn-primary" onClick={handleSubmit} disabled={loading}>
+									{loading ? 'Saving...' : 'Save'}
+								</button>
+							</div>
 						</>
 					)}
-
-					{error && <div className="admin-error">{error}</div>}
-
-					<div className="admin-form-actions">
-						<button className="admin-btn admin-btn-secondary" onClick={onCancel}>Cancel</button>
-						<button className="admin-btn admin-btn-primary" onClick={handleSubmit} disabled={loading}>
-							{loading ? 'Saving...' : 'Save'}
-						</button>
-					</div>
 				</div>
 			</div>
 		</div>
@@ -170,47 +242,47 @@ const GamesList = ({ token }) => {
 				<h2>Games</h2>
 				<button className="admin-btn admin-btn-primary" onClick={() => setEditing(emptyGame)}>Add Game</button>
 			</div>
-			<table className="admin-table">
-				<thead>
-					<tr>
-						<th>Name</th>
-						<th>Price</th>
-						<th>Active</th>
-						<th>Actions</th>
+			<PaginatedList
+				items={games}
+				columns={[
+					{ label: 'Name', sortField: 'name' },
+					{ label: 'Price', sortField: 'price_new' },
+					{ label: 'Active', sortField: 'active' },
+					{ label: 'Actions', sortField: null }
+				]}
+				filterFields={["name"]}
+				initialSortField="price_new"
+				initialSortDir="asc"
+				renderRow={game => (
+					<tr key={game.id} className={!game.active ? 'admin-row-inactive' : ''}>
+						<td>
+							<div className="admin-game-name">
+								<img src={game.header_image} alt={game.name} className="admin-game-thumb" />
+								<span>{game.name}</span>
+							</div>
+						</td>
+						<td>
+							{game.is_free ? 'Free' :
+								game.is_gamepass ? 'Game Pass' :
+									`$${game.price_new.toFixed(2)}`}
+						</td>
+						<td>
+							<button
+								className={`admin-toggle ${game.active ? 'active' : ''}`}
+								onClick={() => toggleActive(game)}
+							>
+								{game.active ? 'Active' : 'Inactive'}
+							</button>
+						</td>
+						<td>
+							<div className="admin-actions">
+								<button className="admin-btn admin-btn-secondary" onClick={() => setEditing(game)}>Edit</button>
+								<button className="admin-btn admin-btn-danger" onClick={() => deleteGame(game.id)}>Delete</button>
+							</div>
+						</td>
 					</tr>
-				</thead>
-				<tbody>
-					{games.map(game => (
-						<tr key={game.id} className={!game.active ? 'admin-row-inactive' : ''}>
-							<td>
-								<div className="admin-game-name">
-									<img src={game.header_image} alt={game.name} className="admin-game-thumb" />
-									<span>{game.name}</span>
-								</div>
-							</td>
-							<td>
-								{game.is_free ? 'Free' :
-									game.is_gamepass ? 'Game Pass' :
-										`$${game.price_new.toFixed(2)}`}
-							</td>
-							<td>
-								<button
-									className={`admin-toggle ${game.active ? 'active' : ''}`}
-									onClick={() => toggleActive(game)}
-								>
-									{game.active ? 'Active' : 'Inactive'}
-								</button>
-							</td>
-							<td>
-								<div className="admin-actions">
-									<button className="admin-btn admin-btn-secondary" onClick={() => setEditing(game)}>Edit</button>
-									<button className="admin-btn admin-btn-danger" onClick={() => deleteGame(game.id)}>Delete</button>
-								</div>
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
+				)}
+			/>
 		</div>
 	);
 };
