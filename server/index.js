@@ -51,8 +51,8 @@ app.listen(PORT, () => {
 	console.log(`Server running on port ${PORT}`);
 });
 
-// Run refresh every 6 hours
-cron.schedule('0 */6 * * *', () => {
+// Run refresh every minute
+cron.schedule('* * * * *', () => {
 	refreshGames();
 	refreshAttendees();
 });

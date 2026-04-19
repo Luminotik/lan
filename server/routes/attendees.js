@@ -5,13 +5,16 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
 	try {
-		const configResult = await pool.query('SELECT show_inactive_attendees FROM config LIMIT 1');
+		const configResult = await pool.query(
+			`SELECT	show_inactive_attendees
+			 FROM	config
+			 LIMIT	1`);
 		const { show_inactive_attendees } = configResult.rows[0];
 
 		const result = await pool.query(
-			`SELECT id, 
-                    steam_id, 
-                    persona_name,
+			`SELECT	id, 
+					steam_id, 
+					persona_name,
 					avatar,
 					avatar_medium,
 					avatar_full,
@@ -20,15 +23,12 @@ router.get('/', async (req, res) => {
 					role,
 					level,
 					is_new
-
-             FROM   attendees 
-
-             ${show_inactive_attendees ? '' : 'WHERE	active = true'}
-
-             ORDER BY   role ASC, 
-                        level DESC,
+			 FROM	attendees 
+			 ${show_inactive_attendees ? '' : 'WHERE	active = true'}
+			 ORDER BY	role ASC, 
+						level DESC,
 						is_new ASC, 
-                        first_name ASC`
+						first_name ASC`
 		);
 		res.json(result.rows);
 	} catch (err) {
@@ -39,13 +39,16 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
 	try {
-		const configResult = await pool.query('SELECT show_inactive_attendees FROM config LIMIT 1');
+		const configResult = await pool.query(
+			`SELECT	show_inactive_attendees
+			 FROM	config
+			 LIMIT	1`);
 		const { show_inactive_attendees } = configResult.rows[0];
 
 		const result = await pool.query(
-			`SELECT id, 
-                    steam_id, 
-                    persona_name,
+			`SELECT	id, 
+					steam_id, 
+					persona_name,
 					avatar,
 					avatar_medium,
 					avatar_full,
@@ -54,10 +57,8 @@ router.get('/:id', async (req, res) => {
 					role,
 					level,
 					is_new
-
-             FROM   attendees 
-
-             WHERE  id     = $1
+			 FROM	attendees 
+			 WHERE	id = $1
 			 ${show_inactive_attendees ? '' : 'AND	active = true'}`,
 			[req.params.id]
 		);

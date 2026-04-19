@@ -1,38 +1,64 @@
 import pool from '../db.js';
 import fetch from 'node-fetch';
-
-const SIX_HOURS = 6 * 60 * 60 * 1000;
+import { notifyPriceDrops } from './notify.js';
 
 async function getApiConfig() {
-	const [steamResult, itadResult] = await Promise.all([
-		pool.query('SELECT * FROM api_steam LIMIT 1'),
-		pool.query('SELECT * FROM api_itad LIMIT 1'),
-		pool.query('SELECT update_inactive_games, update_inactive_attendees FROM config LIMIT 1')
+	const [steamResult, itadResult, configResult] = await Promise.all([
+		pool.query(
+			`SELECT	api_key,
+					url_get_app_details,
+					url_get_player_summaries
+			 FROM	api_steam
+			 LIMIT	1`),
+		pool.query(
+			`SELECT	api_key,
+					url_get_current_prices,
+					country,
+					trusted_shops
+			 FROM	api_itad
+			 LIMIT	1`),
+		pool.query(
+			`SELECT	game_ttl,
+					attendee_ttl,
+					update_inactive_games,
+					update_inactive_attendees
+			 FROM	config
+			 LIMIT	1`)
 	]);
 	return {
 		steam: steamResult.rows[0],
 		itad: itadResult.rows[0],
-		flags: configResult.rows[0]
+		flags: {
+			update_inactive_games: configResult.rows[0].update_inactive_games,
+			update_inactive_attendees: configResult.rows[0].update_inactive_attendees
+		},
+		ttl: {
+			game_ttl: configResult.rows[0].game_ttl,
+			attendee_ttl: configResult.rows[0].attendee_ttl
+		}
 	};
 }
 
 export async function refreshGames() {
 	console.log('[refresh] Checking games for stale data...');
-	const { steam, itad, flags } = await getApiConfig();
+	const { steam, itad, flags, ttl } = await getApiConfig();
 	const now = Date.now();
+	const drops = [];
 
 	const { rows: games } = await pool.query(
 		`SELECT	id,
 				steam_appid,
 				itad_id,
+				name,
+				header_image,
+				is_free,
+				url,
 				price_old,
 				price_new
-
 		 FROM	games
-
 		 WHERE	last_update < $1
 		 ${flags.update_inactive_games ? '' : 'AND	active = true'}`,
-		[now - SIX_HOURS]
+		[now - ttl.game_ttl]
 	);
 
 	if (games.length === 0) {
@@ -45,7 +71,7 @@ export async function refreshGames() {
 	for (const game of games) {
 		try {
 			// Steam refresh
-			let name = null, headerImage = null, isFree = null;
+			let name = game.name, headerImage = game.header_image, isFree = game.is_free;
 
 			if (game.steam_appid) {
 				const steamUrl = steam.url_get_app_details.replace('{appids}', game.steam_appid);
@@ -61,7 +87,7 @@ export async function refreshGames() {
 			}
 
 			// ITAD refresh
-			let priceNew = null, priceOld = null, url = null;
+			let url = game.url, priceOld = parseFloat(game.price_old), priceNew = parseFloat(game.price_new);
 
 			if (game.itad_id) {
 				const itadUrl = itad.url_get_current_prices
@@ -93,26 +119,35 @@ export async function refreshGames() {
 						best = steam_deal;
 					}
 
-					priceNew = best.price.amount;
-					priceOld = best.regular.amount;
 					url = best.url;
+					priceOld = best.regular.amount;
+					priceNew = best.price.amount;
 
 					if (priceNew === 0) isFree = true;
 				}
 			}
 
+			// Take note of price drops as we'll want to notify subscribed attendees
+			const existingPriceNew = parseFloat(game.price_new);
+
+			if (priceNew < existingPriceNew) {
+				drops.push({
+					name: name,
+					price_new: priceNew,
+					price_old: existingPriceNew
+				});
+			}
+
 			await pool.query(
 				`UPDATE	games
-
-				 SET	last_update  = $1,
-                		name         = COALESCE($2, name),
-                		header_image = COALESCE($3, header_image),
-                		is_free      = COALESCE($4, is_free),
-                    	price_new    = COALESCE($5, price_new),
-                    	price_old    = COALESCE($6, price_old),
-                    	url          = COALESCE($7, url)
-
-                 WHERE	id = $8`,
+				 SET	last_update	 = $1,
+						name		 = $2,
+						header_image = $3,
+						is_free		 = $4,
+						price_new	 = $5,
+						price_old	 = $6,
+						url			 = $7
+				 WHERE	id			 = $8`,
 				[now, name, headerImage, isFree, priceNew, priceOld, url, game.id]
 			);
 
@@ -121,24 +156,24 @@ export async function refreshGames() {
 			console.error(`[refresh] Failed to refresh game ${game.steam_appid}:`, err.message);
 		}
 	}
+
+	await notifyPriceDrops(drops);
 }
 
 export async function refreshAttendees() {
 	console.log('[refresh] Checking attendees for stale data...');
-	const { steam, flags } = await getApiConfig();
+	const { steam, flags, ttl } = await getApiConfig();
 	const now = Date.now();
 
 	const { rows: attendees } = await pool.query(
 		`SELECT	id,
 				steam_id
-
 		 FROM	attendees
-
-		 WHERE	last_update < $1
-		 AND	steam_id    IS NOT NULL
-		 AND	steam_id    != ''
+		 WHERE	last_update	< $1
+		 AND	steam_id	IS NOT NULL
+		 AND	steam_id	!= ''
 		 ${flags.update_inactive_attendees ? '' : 'AND	active = true'}`,
-		[now - SIX_HOURS]
+		[now - ttl.attendee_ttl]
 	);
 
 	if (attendees.length === 0) {
@@ -162,14 +197,12 @@ export async function refreshAttendees() {
 		try {
 			await pool.query(
 				`UPDATE	attendees
-
-				 SET	last_update   = $1,
-                		persona_name  = $2,
-                    	avatar        = $3,
-                    	avatar_medium = $4,
-                    	avatar_full   = $5
-
-                 WHERE	steam_id = $6`,
+				 SET	last_update		= $1,
+						persona_name	= $2,
+						avatar			= $3,
+						avatar_medium	= $4,
+						avatar_full		= $5
+				 WHERE	steam_id		= $6`,
 				[now, player.personaname, player.avatar, player.avatarmedium, player.avatarfull, player.steamid]
 			);
 			console.log(`[refresh] Updated attendee: ${player.personaname}`);

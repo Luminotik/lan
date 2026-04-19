@@ -10,12 +10,10 @@ router.get('/', async (req, res) => {
 	try {
 		const result = await pool.query(
 			`SELECT	*
-
-             FROM	games
-
-             ORDER BY	priority ASC, 
-                    	price_new ASC, 
-                    	name ASC`
+			 FROM	games
+			 ORDER BY	priority ASC, 
+						price_new ASC, 
+						name ASC`
 		);
 		res.json(result.rows.map(game => ({
 			...game,
@@ -47,13 +45,16 @@ router.post('/', async (req, res) => {
 								active,
 								last_update
 							)
-
-             VALUES	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0)
-
-             RETURNING	*`,
+			 VALUES	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0)
+			 RETURNING	*`,
 			[steam_appid, itad_id, name, header_image, is_free, is_gamepass, gamepass_url, url, price_old, price_new, priority, active]
 		);
-		res.status(201).json(result.rows[0]);
+		const game = result.rows[0];
+		res.status(201).json({
+			...game,
+			price_old: parseFloat(game.price_old),
+			price_new: parseFloat(game.price_new)
+		});
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ error: 'Database error' });
@@ -64,30 +65,32 @@ router.put('/:id', async (req, res) => {
 	const { steam_appid, itad_id, name, header_image, is_free, is_gamepass, gamepass_url, url, price_old, price_new, priority, active } = req.body;
 	try {
 		const result = await pool.query(
-			`UPDATE	games 
-			
-			 SET	steam_appid  = $1,
-            		itad_id      = $2,
-                	name         = $3,
-                	header_image = $4,
-                	is_free      = $5,
-                	is_gamepass  = $6,
-                	gamepass_url = $7,
-                	url          = $8,
-                	price_old    = $9,
-                	price_new    = $10,
-                	priority     = $11,
-                	active       = $12
-
-             WHERE	id = $13
-
-             RETURNING	*`,
+			`UPDATE	games 		
+			 SET	steam_appid	 = $1,
+					itad_id		 = $2,
+					name		 = $3,
+					header_image = $4,
+					is_free		 = $5,
+					is_gamepass	 = $6,
+					gamepass_url = $7,
+					url			 = $8,
+					price_old	 = $9,
+					price_new	 = $10,
+					priority	 = $11,
+					active		 = $12
+			 WHERE	id			 = $13
+			 RETURNING	*`,
 			[steam_appid, itad_id, name, header_image, is_free, is_gamepass, gamepass_url, url, price_old, price_new, priority, active, req.params.id]
 		);
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Game not found' });
 		}
-		res.json(result.rows[0]);
+		const game = result.rows[0];
+		res.json({
+			...game,
+			price_old: parseFloat(game.price_old),
+			price_new: parseFloat(game.price_new)
+		});
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ error: 'Database error' });
@@ -97,10 +100,8 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
 	try {
 		const result = await pool.query(
-			`DELETE FROM	games
-			
-			 WHERE	id = $1 
-			 
+			`DELETE FROM	games	
+			 WHERE	id = $1 	 
 			 RETURNING	*`,
 			[req.params.id]
 		);

@@ -10,14 +10,12 @@ router.get('/', async (req, res) => {
 	try {
 		const result = await pool.query(
 			`SELECT	*
-
-             FROM	attendees
-
-             ORDER BY	active DESC,
-                		role ASC,
-                    	level DESC,
-                		is_new ASC,
-                    	first_name ASC`
+			 FROM	attendees
+			 ORDER BY	active DESC,
+						role ASC,
+						level DESC,
+						is_new ASC,
+						first_name ASC`
 		);
 		res.json(result.rows);
 	} catch (err) {
@@ -43,10 +41,8 @@ router.post('/', async (req, res) => {
 								last_update,
 								last_notification
 							)
-
-             VALUES	($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 0)
-
-             RETURNING	*`,
+			 VALUES	($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 0)
+			 RETURNING	*`,
 			[steam_id, first_name, last_name, phone, active, role, level, is_new, sms_notifications]
 		);
 		res.status(201).json(result.rows[0]);
@@ -60,21 +56,18 @@ router.put('/:id', async (req, res) => {
 	const { steam_id, first_name, last_name, phone, active, role, level, is_new, sms_notifications } = req.body;
 	try {
 		const result = await pool.query(
-			`UPDATE	attendees
-			
-			 SET	steam_id          = $1,
-            		first_name        = $2,
-                	last_name         = $3,
-                	phone             = $4,
-                	active            = $5,
-                	role              = $6,
-                	level             = $7,
-                	is_new            = $8,
-                	sms_notifications = $9
-
-             WHERE	id = $10
-
-             RETURNING	*`,
+			`UPDATE	attendees		
+			 SET	steam_id			= $1,
+					first_name			= $2,
+					last_name			= $3,
+					phone				= $4,
+					active				= $5,
+					role				= $6,
+					level				= $7,
+					is_new				= $8,
+					sms_notifications	= $9
+			 WHERE	id = $10
+			 RETURNING	*`,
 			[steam_id, first_name, last_name, phone, active, role, level, is_new, sms_notifications, req.params.id]
 		);
 		if (result.rows.length === 0) {
@@ -90,11 +83,9 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
 	try {
 		const result = await pool.query(
-			`DELETE FROM	attendees
-			
-			WHERE	id = $1
-			
-			RETURNING	*`,
+			`DELETE FROM	attendees			
+			 WHERE	id = $1
+			 RETURNING	*`,
 			[req.params.id]
 		);
 		if (result.rows.length === 0) {
