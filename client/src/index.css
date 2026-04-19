@@ -580,6 +580,19 @@ h6 {
 	cursor: not-allowed;
 }
 
+.admin-login-back {
+	text-align: center;
+	font-size: 0.85rem;
+	opacity: 0.6;
+	margin-top: 0.5rem;
+	color: #eee;
+	text-decoration: none;
+}
+
+.admin-login-back:hover {
+	opacity: 1;
+}
+
 
 /* Admin — layout */
 .admin-layout {

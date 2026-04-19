@@ -1,5 +1,6 @@
-import pool from '../db.js';
 import twilio from 'twilio';
+
+import pool from '../db.js';
 
 const smsClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const testSmsClient = twilio(process.env.TWILIO_TEST_ACCOUNT_SID, process.env.TWILIO_TEST_AUTH_TOKEN);

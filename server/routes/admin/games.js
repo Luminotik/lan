@@ -1,6 +1,9 @@
 import express from 'express';
+
 import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { lookupItadId, getBestDeal } from '../lib/itad.js';
+import { getAppDetails } from '../lib/steam.js';
 
 const router = express.Router();
 
@@ -114,5 +117,40 @@ router.delete('/:id', async (req, res) => {
 		res.status(500).json({ error: 'Database error' });
 	}
 });
+
+router.post('/lookup', async (req, res) => {
+	const { steam_appid } = req.body;
+	if (!steam_appid) {
+		return res.status(400).json({ error: 'Steam App ID required' });
+	}
+
+	try {
+		// Steam lookup by Steam App ID
+		const steam = await getAppDetails(steam_appid);
+
+		if (!steam) {
+			return res.status(404).json({ error: `Steam details not found for App ID ${steam_appid}` });
+		}
+
+		// ITAD ID lookup
+		const itadId = await lookupItadId(steam_appid);
+		const deal = itadId ? await getBestDeal(itadId) : null;
+
+		res.json({
+			steam_appid,
+			itad_id: itadId,
+			name: steam.name,
+			header_image: steam.header_image,
+			is_free: steam.is_free,
+			url: deal?.url ?? `https://store.steampowered.com/app/${steam_appid}/`,
+			price_old: deal?.price_old,
+			price_new: deal?.price_new
+		});
+	} catch (err) {
+		console.error('[admin/games/lookup]', err);
+		res.status(500).json({ error: 'Lookup failed' });
+	}
+});
+
 
 export default router;

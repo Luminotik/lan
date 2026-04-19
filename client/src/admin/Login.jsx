@@ -38,6 +38,7 @@ const Login = ({ onLogin }) => {
 					<button type="submit" disabled={loading}>
 						{loading ? 'Signing in...' : 'Sign In'}
 					</button>
+					<a href="/" className="admin-login-back">← Back to site</a>
 				</form>
 			</div>
 		</div>
