@@ -1,12 +1,16 @@
 import fetch from 'node-fetch';
 import pool from '../db.js';
 
+// Module-level rate limit state — shared across all Discord API calls.
+// Tracks when we're allowed to make the next request.
+let rateLimitResetAt = 0;
+
 async function getDiscordConfig() {
 	const { rows } = await pool.query(
 		`SELECT	bot_token,
 				server_id,
 				url_member,
-				url_member_role		
+				url_member_role
 		 FROM	api_discord
 		 LIMIT	1`
 	);
@@ -37,22 +41,64 @@ async function rolesForLanRole(lanRole) {
 	return rows[0]?.discord_role_ids ?? [];
 }
 
+// Centralized Discord API request handler.
+// - Waits until rateLimitResetAt before making a request if we've hit the limit.
+// - Updates rateLimitResetAt based on response headers.
+// - Retries on 429 with exponential backoff (up to 3 attempts).
+async function discordRequest(url, options = {}, attempt = 1) {
+	// Wait if we're preemptively rate-limited
+	const now = Date.now();
+	if (rateLimitResetAt > now) {
+		const waitMs = rateLimitResetAt - now;
+		console.log(`[discord] Preemptively waiting ${waitMs}ms for rate limit reset`);
+		await new Promise(resolve => setTimeout(resolve, waitMs));
+	}
+
+	const config = await getDiscordConfig();
+	const res = await fetch(url, {
+		...options,
+		headers: {
+			'Authorization': `Bot ${config.bot_token}`,
+			'Content-Type': 'application/json',
+			...options.headers
+		}
+	});
+
+	// Update rate limit state from response headers
+	const remaining = parseInt(res.headers.get('x-ratelimit-remaining') ?? '1', 10);
+	const resetAfter = parseFloat(res.headers.get('x-ratelimit-reset-after') ?? '0');
+
+	// If we've used up our bucket, note when we can request again
+	if (remaining === 0 && resetAfter > 0) {
+		rateLimitResetAt = Date.now() + (resetAfter * 1000);
+	}
+
+	// Reactive retry on 429
+	if (res.status === 429) {
+		const retryAfter = parseFloat(res.headers.get('retry-after') ?? '1');
+
+		if (attempt > 3) {
+			console.error(`[discord] Rate limited after 3 retries on ${url}, giving up`);
+			return res;
+		}
+
+		console.warn(`[discord] Rate limited, waiting ${retryAfter}s before retry ${attempt}/3`);
+		await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+		return discordRequest(url, options, attempt + 1);
+	}
+
+	return res;
+}
+
 // Assign a set of Discord roles to a user.
 async function modifyRole(discord_id, role_id, method) {
 	const config = await getDiscordConfig();
-
 	const url = config.url_member_role
 		.replace('{server_id}', config.server_id)
 		.replace('{user_id}', discord_id)
 		.replace('{role_id}', role_id);
 
-	const res = await fetch(url, {
-		method,
-		headers: {
-			'Authorization': `Bot ${config.bot_token}`,
-			'Content-Type': 'application/json'
-		}
-	});
+	const res = await discordRequest(url, { method });
 
 	if (!res.ok && res.status !== 204) {
 		const body = await res.text();
@@ -89,8 +135,6 @@ async function removeAllLanRoles(discord_id) {
 export async function syncAttendeeRoles(attendee) {
 	if (!attendee.discord_id) return;
 
-	console.log(`Syncing attendee roles for ${attendee.persona_name}`);
-
 	if (!attendee.active) {
 		await removeAllLanRoles(attendee.discord_id);
 		return;
@@ -108,17 +152,12 @@ export async function syncAttendeeRoles(attendee) {
 
 // Validate membership of a user in the Discord server.
 export async function validateMembership(discord_id) {
-	console.log(`Validating Discord membership for Discord ID ${discord_id}`);
-
 	const config = await getDiscordConfig();
-
 	const url = config.url_member
 		.replace('{server_id}', config.server_id)
 		.replace('{user_id}', discord_id);
 
-	const res = await fetch(url, {
-		headers: { 'Authorization': `Bot ${config.bot_token}` }
-	});
+	const res = await discordRequest(url);
 
 	if (res.status === 404) {
 		return { valid: false, error: 'User not found in server' };

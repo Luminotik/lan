@@ -2,6 +2,4 @@ node_modules/
 client/node_modules/
 client/dist/
 .env
-.env.local
-.env.production
 db/seed.sql
