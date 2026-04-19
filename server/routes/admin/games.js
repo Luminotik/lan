@@ -12,7 +12,20 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
 	try {
 		const result = await pool.query(
-			`SELECT	*
+			`SELECT	id,
+					steam_appid,
+					itad_id,
+					name,
+					header_image,
+					is_free,
+					is_gamepass,
+					gamepass_url,
+					url,
+					price_old,
+					price_new,
+					priority,
+					active,
+					last_update
 			 FROM	games
 			 ORDER BY	priority ASC, 
 						price_new ASC, 
@@ -49,7 +62,20 @@ router.post('/', async (req, res) => {
 								last_update
 							)
 			 VALUES	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0)
-			 RETURNING	*`,
+			 RETURNING	id,
+						steam_appid,
+						itad_id,
+						name,
+						header_image,
+						is_free,
+						is_gamepass,
+						gamepass_url,
+						url,
+						price_old,
+						price_new,
+						priority,
+						active,
+						last_update`,
 			[steam_appid, itad_id, name, header_image, is_free, is_gamepass, gamepass_url, url, price_old, price_new, priority, active]
 		);
 		const game = result.rows[0];
@@ -82,7 +108,20 @@ router.put('/:id', async (req, res) => {
 					priority	 = $11,
 					active		 = $12
 			 WHERE	id			 = $13
-			 RETURNING	*`,
+			 RETURNING	id,
+						steam_appid,
+						itad_id,
+						name,
+						header_image,
+						is_free,
+						is_gamepass,
+						gamepass_url,
+						url,
+						price_old,
+						price_new,
+						priority,
+						active,
+						last_update`,
 			[steam_appid, itad_id, name, header_image, is_free, is_gamepass, gamepass_url, url, price_old, price_new, priority, active, req.params.id]
 		);
 		if (result.rows.length === 0) {
@@ -105,7 +144,7 @@ router.delete('/:id', async (req, res) => {
 		const result = await pool.query(
 			`DELETE FROM	games	
 			 WHERE	id = $1 	 
-			 RETURNING	*`,
+			 RETURNING	id`,
 			[req.params.id]
 		);
 		if (result.rows.length === 0) {

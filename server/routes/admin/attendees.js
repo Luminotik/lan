@@ -3,6 +3,7 @@ import express from 'express';
 import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { getPlayerSummaries } from '../../lib/steam.js';
+import { syncAttendeeRoles, validateMembership } from '../../lib/discord.js';
 
 const router = express.Router();
 
@@ -11,7 +12,23 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
 	try {
 		const result = await pool.query(
-			`SELECT	*
+			`SELECT	id,
+					steam_id,
+					persona_name,
+					avatar,
+					avatar_medium,
+					avatar_full,
+					discord_id,
+					first_name,
+					last_name,
+					phone,
+					sms_notifications,
+					last_notification,
+					role,
+					level,
+					is_new,
+					active,
+					last_update
 			 FROM	attendees
 			 ORDER BY	active DESC,
 						role ASC,
@@ -27,27 +44,46 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-	const { steam_id, first_name, last_name, phone, active, role, level, is_new, sms_notifications } = req.body;
+	const { steam_id, discord_id, first_name, last_name, phone, sms_notifications, role, level, is_new, active } = req.body;
 	try {
 		const result = await pool.query(
 			`INSERT INTO	attendees (
 								steam_id,
+								discord_id,
 								first_name,
 								last_name,
 								phone,
-								active,
+								sms_notifications,
+								last_notification,
 								role,
 								level,
 								is_new,
-								sms_notifications,
-								last_update,
-								last_notification
+								active,
+								last_update
 							)
-			 VALUES	($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, 0)
-			 RETURNING	*`,
-			[steam_id, first_name, last_name, phone, active, role, level, is_new, sms_notifications]
+			 VALUES	($1, $2, $3, $4, $5, $6, 0, $7, $8, $9, $10, 0)
+			 RETURNING	id,
+						steam_id,
+						persona_name,
+						avatar,
+						avatar_medium,
+						avatar_full,
+						discord_id,
+						first_name,
+						last_name,
+						phone,
+						sms_notifications,
+						last_notification,
+						role,
+						level,
+						is_new,
+						active,
+						last_update`,
+			[steam_id, discord_id, first_name, last_name, phone, sms_notifications, role, level, is_new, active]
 		);
-		res.status(201).json(result.rows[0]);
+		const attendee = result.rows[0];
+		await syncAttendeeRoles(attendee);
+		res.status(201).json(attendee);
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ error: 'Database error' });
@@ -55,27 +91,46 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-	const { steam_id, first_name, last_name, phone, active, role, level, is_new, sms_notifications } = req.body;
+	const { steam_id, discord_id, first_name, last_name, phone, sms_notifications, role, level, is_new, active } = req.body;
 	try {
 		const result = await pool.query(
 			`UPDATE	attendees		
 			 SET	steam_id			= $1,
-					first_name			= $2,
-					last_name			= $3,
-					phone				= $4,
-					active				= $5,
-					role				= $6,
-					level				= $7,
-					is_new				= $8,
-					sms_notifications	= $9
-			 WHERE	id = $10
-			 RETURNING	*`,
-			[steam_id, first_name, last_name, phone, active, role, level, is_new, sms_notifications, req.params.id]
+			 		discord_id			= $2,
+					first_name			= $3,
+					last_name			= $4,
+					phone				= $5,
+					sms_notifications	= $6,
+					role				= $7,
+					level				= $8,
+					is_new				= $9,
+					active				= $10
+			 WHERE	id					= $11
+			 RETURNING	id,
+						steam_id,
+						persona_name,
+						avatar,
+						avatar_medium,
+						avatar_full,
+						discord_id,
+						first_name,
+						last_name,
+						phone,
+						sms_notifications,
+						last_notification,
+						role,
+						level,
+						is_new,
+						active,
+						last_update`,
+			[steam_id, discord_id, first_name, last_name, phone, sms_notifications, role, level, is_new, active, req.params.id]
 		);
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Attendee not found' });
 		}
-		res.json(result.rows[0]);
+		const attendee = result.rows[0];
+		await syncAttendeeRoles(attendee);
+		res.json(attendee);
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ error: 'Database error' });
@@ -87,12 +142,15 @@ router.delete('/:id', async (req, res) => {
 		const result = await pool.query(
 			`DELETE FROM	attendees			
 			 WHERE	id = $1
-			 RETURNING	*`,
+			 RETURNING	id,
+			 			discord_id`,
 			[req.params.id]
 		);
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Attendee not found' });
 		}
+		const deleted = result.rows[0];
+		await syncAttendeeRoles({ ...deleted, active: false });
 		res.json({ message: 'Attendee deleted' });
 	} catch (err) {
 		console.error(err);
@@ -101,14 +159,22 @@ router.delete('/:id', async (req, res) => {
 });
 
 router.post('/lookup', async (req, res) => {
-	const { steam_id } = req.body;
+	const { steam_id, discord_id } = req.body;
 	if (!steam_id) {
 		return res.status(400).json({ error: 'Steam ID required' });
 	}
 
 	try {
-		const players = await getPlayerSummaries([steam_id]);
+		// Validate Discord membership only if provided
+		if (discord_id) {
+			const discordCheck = await validateMembership(discord_id);
+			if (!discordCheck.valid) {
+				return res.status(400).json({ error: `Discord: ${discordCheck.error}` });
+			}
+		}
 
+		// Validate Steam profile
+		const players = await getPlayerSummaries([steam_id]);
 		if (players.length === 0) {
 			return res.status(404).json({ error: 'Steam profile not found' });
 		}
@@ -119,7 +185,8 @@ router.post('/lookup', async (req, res) => {
 			persona_name: player.personaname,
 			avatar: player.avatar,
 			avatar_medium: player.avatarmedium,
-			avatar_full: player.avatarfull
+			avatar_full: player.avatarfull,
+			discord_id: discord_id || null
 		});
 	} catch (err) {
 		console.error('[admin/attendees/lookup]', err);
@@ -127,5 +194,16 @@ router.post('/lookup', async (req, res) => {
 	}
 });
 
+router.post('/validate-discord', async (req, res) => {
+	const { discord_id } = req.body;
+	if (!discord_id) return res.json({ valid: true });
+
+	const check = await validateMembership(discord_id);
+	if (!check.valid) {
+		return res.status(400).json({ error: check.error });
+	}
+
+	res.json({ valid: true });
+});
 
 export default router;

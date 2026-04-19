@@ -67,7 +67,12 @@ router.get('/:id', async (req, res) => {
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Game not found' });
 		}
-		res.json(result.rows[0]);
+		const game = result.rows[0];
+		res.json({
+			...game,
+			price_old: parseFloat(game.price_old),
+			price_new: parseFloat(game.price_new)
+		});
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ error: 'Database error' });

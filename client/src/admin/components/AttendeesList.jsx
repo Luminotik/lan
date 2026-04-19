@@ -20,6 +20,7 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [validated, setValidated] = useState(!!attendee.id);
+	const [discordValidated, setDiscordValidated] = useState(!!attendee.discord_id);
 	const [steamIdInput, setSteamIdInput] = useState(attendee.steam_id || '');
 	const [validating, setValidating] = useState(false);
 
@@ -62,7 +63,24 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 		}
 	};
 
+	const handleDiscordValidate = async () => {
+		try {
+			await api.post('/api/admin/attendees/validate-discord', {
+				discord_id: form.discord_id
+			});
+			setDiscordValidated(true);
+			setError(null);
+		} catch (err) {
+			setError(err.response?.data?.error || 'Discord validation failed');
+		}
+	};
+
 	const handleSubmit = async () => {
+		if (form.discord_id && !discordValidated) {
+			setError('Please re-validate after changing the Discord ID');
+			return;
+		}
+
 		setLoading(true);
 		setError(null);
 		try {
@@ -114,6 +132,26 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 
 							<label>Persona Name</label>
 							<input value={form.persona_name || ''} disabled />
+
+							<label>Discord ID</label>
+							<div className="admin-form-inline">
+								<input
+									value={form.discord_id || ''}
+									onChange={e => {
+										set('discord_id', e.target.value);
+										setDiscordValidated(false);
+									}}
+								/>
+								{form.discord_id && !discordValidated && (
+									<button
+										type="button"
+										className="admin-btn admin-btn-primary"
+										onClick={handleDiscordValidate}
+									>
+										Validate
+									</button>
+								)}
+							</div>
 
 							<label>First Name</label>
 							<input value={form.first_name || ''} onChange={e => set('first_name', e.target.value)} />
