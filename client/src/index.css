@@ -706,6 +706,47 @@ h6 {
 	.admin-section-header {
 		padding-left: 3.5rem;
 	}
+
+	.admin-table thead {
+		display: none;
+	}
+
+	.admin-table,
+	.admin-table tbody,
+	.admin-table tr,
+	.admin-table td {
+		display: block;
+		width: 100%;
+	}
+
+	.admin-table tr {
+		border: 1px solid #2a3a4a;
+		border-radius: 0.5rem;
+		margin-bottom: 1rem;
+		padding: 0.75rem;
+		background: #111a22;
+	}
+
+	.admin-table td {
+		border: none;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.4rem 0;
+		text-align: right;
+	}
+
+	.admin-table td::before {
+		content: attr(data-label);
+		font-weight: 600;
+		color: #7a8a9a;
+		text-align: left;
+		margin-right: 1rem;
+	}
+
+	.admin-table td:last-child {
+		justify-content: flex-end;
+	}
 }
 
 .admin-logout {
@@ -813,7 +854,7 @@ h6 {
 	opacity: 0.4;
 }
 
-.admin-game-name {
+.admin-name {
 	display: flex;
 	align-items: center;
 	gap: 0.75rem;

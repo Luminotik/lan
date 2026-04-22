@@ -287,8 +287,8 @@ const AttendeesList = ({ token }) => {
 				initialSortDir="asc"
 				renderRow={attendee => (
 					<tr key={attendee.id} className={!attendee.active ? 'admin-row-inactive' : ''}>
-						<td>
-							<div className="admin-game-name">
+						<td data-label="Name">
+							<div className="admin-name">
 								{attendee.avatar_full && (
 									<img src={attendee.avatar_full} alt={attendee.persona_name} className="admin-avatar-thumb" />
 								)}
@@ -298,9 +298,9 @@ const AttendeesList = ({ token }) => {
 								</div>
 							</div>
 						</td>
-						<td>{['', 'Host', 'Contributor', 'Standard'][attendee.role]}</td>
-						<td>{attendee.level}</td>
-						<td>
+						<td data-label="Role">{['', 'Host', 'Contributor', 'Standard'][attendee.role]}</td>
+						<td data-label="Level">{attendee.level}</td>
+						<td data-label="Active">
 							<button
 								className={`admin-toggle ${attendee.active ? 'active' : ''}`}
 								onClick={() => toggleActive(attendee)}
@@ -308,7 +308,7 @@ const AttendeesList = ({ token }) => {
 								{attendee.active ? 'Active' : 'Inactive'}
 							</button>
 						</td>
-						<td>
+						<td data-label="">
 							<div className="admin-actions">
 								<button className="admin-btn admin-btn-secondary" onClick={() => setEditing(attendee)}>Edit</button>
 								<button className="admin-btn admin-btn-danger" onClick={() => deleteAttendee(attendee.id)}>Delete</button>

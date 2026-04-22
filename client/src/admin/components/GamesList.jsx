@@ -255,18 +255,18 @@ const GamesList = ({ token }) => {
 				initialSortDir="asc"
 				renderRow={game => (
 					<tr key={game.id} className={!game.active ? 'admin-row-inactive' : ''}>
-						<td>
-							<div className="admin-game-name">
+						<td data-label="Name">
+							<div className="admin-name">
 								<img src={game.header_image} alt={game.name} className="admin-game-thumb" />
 								<span>{game.name}</span>
 							</div>
 						</td>
-						<td>
+						<td data-label="Price">
 							{game.is_free ? 'Free' :
 								game.is_gamepass ? 'Game Pass' :
 									`$${game.price_new.toFixed(2)}`}
 						</td>
-						<td>
+						<td data-label="Active">
 							<button
 								className={`admin-toggle ${game.active ? 'active' : ''}`}
 								onClick={() => toggleActive(game)}
@@ -274,7 +274,7 @@ const GamesList = ({ token }) => {
 								{game.active ? 'Active' : 'Inactive'}
 							</button>
 						</td>
-						<td>
+						<td data-label="">
 							<div className="admin-actions">
 								<button className="admin-btn admin-btn-secondary" onClick={() => setEditing(game)}>Edit</button>
 								<button className="admin-btn admin-btn-danger" onClick={() => deleteGame(game.id)}>Delete</button>
