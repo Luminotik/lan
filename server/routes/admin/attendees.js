@@ -4,7 +4,8 @@ import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { getPlayerSummaries } from '../../lib/steam.js';
 import { syncAttendeeRoles, validateMembership } from '../../lib/discord.js';
-import { logger } from '../../lib/logger.js';
+import { createLogger } from '../../lib/logger.js';
+const logger = createLogger('admin/attendees');
 
 const router = express.Router();
 
@@ -180,7 +181,7 @@ router.post('/lookup', async (req, res) => {
 			discord_id: discord_id || null
 		});
 	} catch (err) {
-		logger.error('[admin/attendees/lookup]', err);
+		logger.error('lookup', err);
 		res.status(500).json({ error: 'Lookup failed' });
 	}
 });

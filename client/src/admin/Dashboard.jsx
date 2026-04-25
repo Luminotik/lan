@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import GamesList from './components/GamesList';
 import AttendeesList from './components/AttendeesList';
 import ConfigEditor from './components/ConfigEditor';
+import Notifications from './components/Notifications';
 
 const Dashboard = ({ onLogout }) => {
 	const [navOpen, setNavOpen] = useState(false);
@@ -27,6 +28,7 @@ const Dashboard = ({ onLogout }) => {
 					<NavLink to="/admin/games" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeNav}>Games</NavLink>
 					<NavLink to="/admin/attendees" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeNav}>Attendees</NavLink>
 					<NavLink to="/admin/config" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeNav}>Config</NavLink>
+					<NavLink to="/admin/notifications" className={({ isActive }) => isActive ? 'admin-nav-item active' : 'admin-nav-item'} onClick={closeNav}>Notifications</NavLink>
 				</nav>
 				<button className="admin-logout" onClick={onLogout}>Sign Out</button>
 			</aside>
@@ -38,6 +40,7 @@ const Dashboard = ({ onLogout }) => {
 					<Route path="games" element={<GamesList />} />
 					<Route path="attendees" element={<AttendeesList />} />
 					<Route path="config" element={<ConfigEditor />} />
+					<Route path="notifications" element={<Notifications />} />
 					<Route path="*" element={<Navigate to="/admin/games" replace />} />
 				</Routes>
 			</main>

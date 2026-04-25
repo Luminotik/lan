@@ -1,6 +1,7 @@
 import pool from '../db.js';
 import { sendChannelMessage } from '../lib/discord.js';
-import { logger } from '../lib/logger.js';
+import { createLogger } from '../lib/logger.js';
+const logger = createLogger('notify');
 
 export async function notifyPriceDrops(drops) {
 	if (drops.length === 0) return;
@@ -16,7 +17,7 @@ export async function notifyPriceDrops(drops) {
 	const roleId = roleRows[0]?.discord_role_ids?.[0];
 
 	if (!channelId) {
-		logger.warn('[notify] No notification_channel_id configured, skipping price drop notification.');
+		logger.warn('No notification_channel_id configured, skipping price drop notification.');
 		return;
 	}
 
@@ -24,11 +25,11 @@ export async function notifyPriceDrops(drops) {
 		`**${d.name}** — $${d.price_new.toFixed(2)} *(was $${d.price_old.toFixed(2)})*`
 	);
 
-	logger.log(`[notify] Sending price drop notification for ${drops.length} game(s) to channel ${channelId}.`);
+	logger.log(`Sending price drop notification for ${drops.length} game(s) to channel ${channelId}.`);
 
 	const payload = {
 		embeds: [{
-			title: 'Price Drops',
+			title: 'Price update:',
 			description: lines.join('\n'),
 			color: 0x57F287
 		}]

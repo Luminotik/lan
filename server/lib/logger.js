@@ -51,7 +51,16 @@ function write(stream, ...args) {
 }
 
 export const logger = {
-	log: (...args) => write(process.stdout, ...args),
+	log:   (...args) => write(process.stdout, ...args),
 	error: (...args) => write(process.stderr, ...args),
-	warn: (...args) => write(process.stderr, ...args),
+	warn:  (...args) => write(process.stderr, ...args),
 };
+
+export function createLogger(tag) {
+	const prefix = `[${tag}]`;
+	return {
+		log:   (...args) => write(process.stdout, prefix, ...args),
+		error: (...args) => write(process.stderr, prefix, ...args),
+		warn:  (...args) => write(process.stderr, prefix, ...args),
+	};
+}

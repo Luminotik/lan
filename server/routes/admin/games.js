@@ -4,7 +4,8 @@ import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { lookupItadId, getBestDeal } from '../../lib/itad.js';
 import { getAppDetails } from '../../lib/steam.js';
-import { logger } from '../../lib/logger.js';
+import { createLogger } from '../../lib/logger.js';
+const logger = createLogger('admin/games');
 
 const router = express.Router();
 
@@ -187,7 +188,7 @@ router.post('/lookup', async (req, res) => {
 			price_new: deal?.price_new
 		});
 	} catch (err) {
-		logger.error('[admin/games/lookup]', err);
+		logger.error('lookup', err);
 		res.status(500).json({ error: 'Lookup failed' });
 	}
 });

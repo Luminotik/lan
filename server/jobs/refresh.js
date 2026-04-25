@@ -2,7 +2,8 @@ import pool from '../db.js';
 import { notifyPriceDrops } from './notify.js';
 import { lookupItadId, getBestDeal } from '../lib/itad.js';
 import { getAppDetails, getPlayerSummaries } from '../lib/steam.js';
-import { logger } from '../lib/logger.js';
+import { createLogger } from '../lib/logger.js';
+const logger = createLogger('refresh');
 
 async function getConfig() {
 	const { rows } = await pool.query(
@@ -26,7 +27,7 @@ async function getConfig() {
 }
 
 export async function refreshGames() {
-	logger.log('[refresh] Checking games for stale data...');
+	logger.log('Checking games for stale data...');
 	const { flags, ttl } = await getConfig();
 	const now = Date.now();
 	const drops = [];
@@ -48,11 +49,11 @@ export async function refreshGames() {
 	);
 
 	if (games.length === 0) {
-		logger.log('[refresh] All games are up to date.');
+		logger.log('All games are up to date.');
 		return;
 	}
 
-	logger.log(`[refresh] Refreshing ${games.length} stale games...`);
+	logger.log(`Refreshing ${games.length} stale games...`);
 
 	for (const game of games) {
 		try {
@@ -101,9 +102,9 @@ export async function refreshGames() {
 				[now, name, headerImage, isFree, priceNew, priceOld, url, game.id]
 			);
 
-			logger.log(`[refresh] Updated game: ${game.steam_appid}`);
+			logger.log(`Updated game: ${game.steam_appid}`);
 		} catch (err) {
-			logger.error(`[refresh] Failed to refresh game ${game.steam_appid}:`, err.message);
+			logger.error(`Failed to refresh game ${game.steam_appid}:`, err.message);
 		}
 	}
 
@@ -111,7 +112,7 @@ export async function refreshGames() {
 }
 
 export async function refreshAttendees() {
-	logger.log('[refresh] Checking attendees for stale data...');
+	logger.log('Checking attendees for stale data...');
 	const { flags, ttl } = await getConfig();
 	const now = Date.now();
 
@@ -127,11 +128,11 @@ export async function refreshAttendees() {
 	);
 
 	if (attendees.length === 0) {
-		logger.log('[refresh] All attendees are up to date.');
+		logger.log('All attendees are up to date.');
 		return;
 	}
 
-	logger.log(`[refresh] Refreshing ${attendees.length} stale attendees...`);
+	logger.log(`Refreshing ${attendees.length} stale attendees...`);
 
 	const players = await getPlayerSummaries(attendees.map(a => a.steam_id));
 
@@ -147,9 +148,9 @@ export async function refreshAttendees() {
 				 WHERE	steam_id		= $6`,
 				[now, player.personaname, player.avatar, player.avatarmedium, player.avatarfull, player.steamid]
 			);
-			logger.log(`[refresh] Updated attendee: ${player.personaname}`);
+			logger.log(`Updated attendee: ${player.personaname}`);
 		} catch (err) {
-			logger.error(`[refresh] Failed to update attendee ${player.steamid}:`, err.message);
+			logger.error(`Failed to update attendee ${player.steamid}:`, err.message);
 		}
 	}
 }

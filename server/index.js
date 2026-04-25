@@ -15,8 +15,10 @@ import authRouter from './routes/auth.js';
 import adminGamesRouter from './routes/admin/games.js';
 import adminAttendeesRouter from './routes/admin/attendees.js';
 import adminConfigRouter from './routes/admin/config.js';
+import adminNotifyRouter from './routes/admin/notify.js';
 import { refreshGames, refreshAttendees } from './jobs/refresh.js';
-import { logger } from './lib/logger.js';
+import { createLogger } from './lib/logger.js';
+const logger = createLogger('server');
 
 dotenv.config();
 
@@ -43,6 +45,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/admin/games', adminGamesRouter);
 app.use('/api/admin/attendees', adminAttendeesRouter);
 app.use('/api/admin/config', adminConfigRouter);
+app.use('/api/admin/notify', adminNotifyRouter);
 
 app.use(express.static(join(__dirname, '../client/dist')));
 
@@ -51,7 +54,7 @@ app.get('/{*path}', (req, res) => {
 });
 
 app.listen(PORT, () => {
-	logger.log(`[server] Running on port ${PORT}`);
+	logger.log(`Running on port ${PORT}`);
 });
 
 // Run refresh every minute

@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import pool from '../db.js';
-import { logger } from './logger.js';
+import { createLogger } from './logger.js';
+const logger = createLogger('discord');
 
 // Module-level rate limit state — shared across all Discord API calls.
 // Tracks when we're allowed to make the next request.
@@ -51,7 +52,7 @@ async function discordRequest(url, options = {}, attempt = 1) {
 	const now = Date.now();
 	if (rateLimitResetAt > now) {
 		const waitMs = rateLimitResetAt - now;
-		logger.log(`[discord] Preemptively waiting ${waitMs}ms for rate limit reset`);
+		logger.log(`Preemptively waiting ${waitMs}ms for rate limit reset`);
 		await new Promise(resolve => setTimeout(resolve, waitMs));
 	}
 
@@ -79,11 +80,11 @@ async function discordRequest(url, options = {}, attempt = 1) {
 		const retryAfter = parseFloat(res.headers.get('retry-after') ?? '1');
 
 		if (attempt > 3) {
-			logger.error(`[discord] Rate limited after 3 retries on ${url}, giving up`);
+			logger.error(`Rate limited after 3 retries on ${url}, giving up`);
 			return res;
 		}
 
-		logger.warn(`[discord] Rate limited, waiting ${retryAfter}s before retry ${attempt}/3`);
+		logger.warn(`Rate limited, waiting ${retryAfter}s before retry ${attempt}/3`);
 		await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
 		return discordRequest(url, options, attempt + 1);
 	}
@@ -103,7 +104,7 @@ async function modifyRole(discord_id, role_id, method) {
 
 	if (!res.ok && res.status !== 204) {
 		const body = await res.text();
-		logger.error(`[discord] Failed to ${method} role ${role_id} on ${discord_id}: ${res.status} ${body}`);
+		logger.error(`Failed to ${method} role ${role_id} on ${discord_id}: ${res.status} ${body}`);
 	}
 }
 
@@ -160,7 +161,7 @@ export async function sendChannelMessage(channelId, payload) {
 	});
 	if (!res.ok) {
 		const body = await res.text();
-		logger.error(`[discord] Failed to send channel message to ${channelId}: ${res.status} ${body}`);
+		logger.error(`Failed to send channel message to ${channelId}: ${res.status} ${body}`);
 	}
 }
 

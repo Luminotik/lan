@@ -1,7 +1,8 @@
 import express from 'express';
 
 import pool from '../db.js';
-import { logger } from '../lib/logger.js';
+import { createLogger } from '../lib/logger.js';
+const logger = createLogger('attendees');
 
 const router = express.Router();
 

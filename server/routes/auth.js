@@ -2,7 +2,8 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { requireAuth } from '../middleware/auth.js';
-import { logger } from '../lib/logger.js';
+import { createLogger } from '../lib/logger.js';
+const logger = createLogger('auth');
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.post('/login', async (req, res) => {
 	const valid = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
 
 	if (!valid) {
-		logger.warn(`[auth] Failed login attempt from ${req.ip}`);
+		logger.warn(`Failed login attempt from ${req.ip}`);
 		return res.status(401).json({ error: 'Invalid password' });
 	}
 
