@@ -23,14 +23,14 @@ router.post('/login', async (req, res) => {
 	const token = jwt.sign(
 		{ admin: true },
 		process.env.JWT_SECRET,
-		{ expiresIn: '8h' }
+		{ expiresIn: '30d' }
 	);
 
 	res.cookie('admin_token', token, {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
 		sameSite: 'strict',
-		maxAge: 8 * 60 * 60 * 1000  // 8 hours
+		maxAge: 30 * 24 * 60 * 60 * 1000  // 30 days
 	});
 	res.json({ success: true });
 });
