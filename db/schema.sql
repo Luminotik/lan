@@ -29,7 +29,8 @@ CREATE TABLE public.api_discord (
     bot_token text NOT NULL,
     server_id text NOT NULL,
     url_member_role text NOT NULL,
-    url_member text NOT NULL
+    url_member text NOT NULL,
+    notification_channel_id text DEFAULT ''::text NOT NULL
 );
 
 
@@ -64,7 +65,8 @@ CREATE TABLE public.api_steam (
 CREATE TABLE public.attendee_roles (
     role integer NOT NULL,
     label character varying(50) NOT NULL,
-    discord_role_ids text[]
+    discord_role_ids text[],
+    is_base boolean DEFAULT false NOT NULL
 );
 
 

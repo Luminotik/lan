@@ -1,4 +1,5 @@
 import pool from '../db.js';
+import { notifyPriceDrops } from './notify.js';
 import { lookupItadId, getBestDeal } from '../lib/itad.js';
 import { getAppDetails, getPlayerSummaries } from '../lib/steam.js';
 import { logger } from '../lib/logger.js';
@@ -28,6 +29,7 @@ export async function refreshGames() {
 	logger.log('[refresh] Checking games for stale data...');
 	const { flags, ttl } = await getConfig();
 	const now = Date.now();
+	const drops = [];
 
 	const { rows: games } = await pool.query(
 		`SELECT	id,
@@ -81,6 +83,11 @@ export async function refreshGames() {
 				}
 			}
 
+			const existingPriceNew = parseFloat(game.price_new);
+			if (priceNew < existingPriceNew) {
+				drops.push({ name, price_new: priceNew, price_old: existingPriceNew });
+			}
+
 			await pool.query(
 				`UPDATE	games
 				 SET	last_update	 = $1,
@@ -99,6 +106,8 @@ export async function refreshGames() {
 			logger.error(`[refresh] Failed to refresh game ${game.steam_appid}:`, err.message);
 		}
 	}
+
+	await notifyPriceDrops(drops);
 }
 
 export async function refreshAttendees() {

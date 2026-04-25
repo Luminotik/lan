@@ -151,6 +151,19 @@ export async function syncAttendeeRoles(attendee) {
 	await addRoles(attendee.discord_id, targetRoles);
 }
 
+// Send a message to a Discord channel.
+export async function sendChannelMessage(channelId, payload) {
+	const url = `https://discord.com/api/v10/channels/${channelId}/messages`;
+	const res = await discordRequest(url, {
+		method: 'POST',
+		body: JSON.stringify(payload)
+	});
+	if (!res.ok) {
+		const body = await res.text();
+		logger.error(`[discord] Failed to send channel message to ${channelId}: ${res.status} ${body}`);
+	}
+}
+
 // Validate membership of a user in the Discord server.
 export async function validateMembership(discord_id) {
 	const config = await getDiscordConfig();
