@@ -1,7 +1,7 @@
 import pool from '../db.js';
 import { notifyPriceDrops } from './notify.js';
 import { lookupItadId, getBestDeal } from '../lib/itad.js';
-import { getAppDetails, getPlayerSummaries } from '../lib/steam.js';
+import { getAppDetails, getPlayerSummaries, getOwnedGames } from '../lib/steam.js';
 import { createLogger } from '../lib/logger.js';
 const logger = createLogger('refresh');
 
@@ -24,6 +24,23 @@ async function getConfig() {
 			attendee_ttl: rows[0].attendee_ttl
 		}
 	};
+}
+
+async function syncOwnedGames(steamId) {
+	const appids = await getOwnedGames(steamId);
+	if (appids.length === 0) return;
+	await pool.query(
+		`DELETE
+		 FROM	attendee_owned_games
+		 WHERE	steam_id = $1`,
+		[steamId]);
+	const placeholders = appids.map((_, i) => `($1, $${i + 2})`).join(', ');
+	await pool.query(
+		`INSERT
+		 INTO	attendee_owned_games (steam_id, steam_appid)
+		 VALUES	${placeholders}`,
+		[steamId, ...appids]
+	);
 }
 
 export async function refreshGames() {
@@ -86,7 +103,7 @@ export async function refreshGames() {
 
 			const existingPriceNew = parseFloat(game.price_new);
 			if (priceNew < existingPriceNew) {
-				drops.push({ name, price_new: priceNew, price_old: existingPriceNew });
+				drops.push({ name, price_new: priceNew, price_old: existingPriceNew, steam_appid: game.steam_appid });
 			}
 
 			await pool.query(
@@ -117,8 +134,7 @@ export async function refreshAttendees() {
 	const now = Date.now();
 
 	const { rows: attendees } = await pool.query(
-		`SELECT	id,
-				steam_id
+		`SELECT	steam_id
 		 FROM	attendees
 		 WHERE	last_update	< $1
 		 AND	steam_id	IS NOT NULL
@@ -148,6 +164,7 @@ export async function refreshAttendees() {
 				 WHERE	steam_id		= $6`,
 				[now, player.personaname, player.avatar, player.avatarmedium, player.avatarfull, player.steamid]
 			);
+			await syncOwnedGames(player.steamid);
 			logger.log(`Updated attendee: ${player.personaname}`);
 		} catch (err) {
 			logger.error(`Failed to update attendee ${player.steamid}:`, err.message);

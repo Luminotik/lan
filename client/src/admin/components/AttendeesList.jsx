@@ -17,7 +17,7 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 	const [form, setForm] = useState(attendee);
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
-	const [validated, setValidated] = useState(!!attendee.id);
+	const [validated, setValidated] = useState(!!attendee.steam_id);
 	const [discordValidated, setDiscordValidated] = useState(!!attendee.discord_id);
 	const [steamIdInput, setSteamIdInput] = useState(attendee.steam_id || '');
 	const [validating, setValidating] = useState(false);
@@ -82,8 +82,8 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 		setLoading(true);
 		setError(null);
 		try {
-			if (form.id) {
-				await api.put(`/api/admin/attendees/${form.id}`, form);
+			if (form.steam_id) {
+				await api.put(`/api/admin/attendees/${form.steam_id}`, form);
 			} else {
 				await api.post('/api/admin/attendees', form);
 			}
@@ -98,7 +98,7 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 	return (
 		<div className="admin-modal-overlay">
 			<div className="admin-modal">
-				<h2>{form.id ? 'Edit Attendee' : 'Add Attendee'}</h2>
+				<h2>{form.steam_id ? 'Edit Attendee' : 'Add Attendee'}</h2>
 				<div className="admin-form">
 					{!validated ? (
 						<>
@@ -215,27 +215,27 @@ const AttendeesList = () => {
 	const toggleActive = async (attendee) => {
 		// Optimistically update UI immediately
 		setAttendees(prev => prev.map(a =>
-			a.id === attendee.id ? { ...a, active: !a.active } : a
+			a.steam_id === attendee.steam_id ? { ...a, active: !a.active } : a
 		));
 
 		try {
-			await api.put(`/api/admin/attendees/${attendee.id}`, {
+			await api.put(`/api/admin/attendees/${attendee.steam_id}`, {
 				...attendee,
 				active: !attendee.active
 			});
 		} catch (err) {
 			// Revert on failure
 			setAttendees(prev => prev.map(a =>
-				a.id === attendee.id ? { ...a, active: attendee.active } : a
+				a.steam_id === attendee.steam_id ? { ...a, active: attendee.active } : a
 			));
 			setError('Failed to update attendee');
 		}
 	};
 
-	const deleteAttendee = async (id) => {
+	const deleteAttendee = async (steam_id) => {
 		if (!confirm('Are you sure you want to delete this attendee?')) return;
 		try {
-			await api.delete(`/api/admin/attendees/${id}`);
+			await api.delete(`/api/admin/attendees/${steam_id}`);
 			fetchAttendees();
 		} catch (err) {
 			setError('Failed to delete attendee');
@@ -278,7 +278,7 @@ const AttendeesList = () => {
 				initialSortField="role"
 				initialSortDir="asc"
 				renderRow={attendee => (
-					<tr key={attendee.id} className={!attendee.active ? 'admin-row-inactive' : ''}>
+					<tr key={attendee.steam_id} className={!attendee.active ? 'admin-row-inactive' : ''}>
 						<td data-label="Name">
 							<div className="admin-name">
 								{attendee.avatar_full && (
@@ -303,7 +303,7 @@ const AttendeesList = () => {
 						<td data-label="">
 							<div className="admin-actions">
 								<button className="admin-btn admin-btn-secondary" onClick={() => setEditing(attendee)}>Edit</button>
-								<button className="admin-btn admin-btn-danger" onClick={() => deleteAttendee(attendee.id)}>Delete</button>
+								<button className="admin-btn admin-btn-danger" onClick={() => deleteAttendee(attendee.steam_id)}>Delete</button>
 							</div>
 						</td>
 					</tr>

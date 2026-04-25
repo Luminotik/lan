@@ -6,7 +6,8 @@ async function getSteamConfig() {
 	const { rows } = await pool.query(
 		`SELECT	api_key,
 				url_get_app_details,
-				url_get_player_summaries
+				url_get_player_summaries,
+				url_get_owned_games
 		 FROM	api_steam
 		 LIMIT	1`
 	);
@@ -44,4 +45,15 @@ export async function getPlayerSummaries(steam_ids) {
 	const json = await res.json();
 
 	return json.response?.players ?? [];
+}
+
+// Get all owned game appids for a Steam user. Returns an empty array for private profiles.
+export async function getOwnedGames(steam_id) {
+	const steam = await getSteamConfig();
+	const url = steam.url_get_owned_games
+		.replace('{key}', steam.api_key)
+		.replace('{steamid}', steam_id);
+	const res = await fetch(url);
+	const json = await res.json();
+	return json.response?.games?.map(g => String(g.appid)) ?? [];
 }

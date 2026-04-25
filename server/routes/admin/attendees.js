@@ -14,8 +14,7 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
 	try {
 		const result = await pool.query(
-			`SELECT	id,
-					steam_id,
+			`SELECT	steam_id,
 					persona_name,
 					avatar,
 					avatar_medium,
@@ -62,8 +61,7 @@ router.post('/', async (req, res) => {
 								last_update
 							)
 			 VALUES	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-			 RETURNING	id,
-						steam_id,
+			 RETURNING	steam_id,
 						persona_name,
 						avatar,
 						avatar_medium,
@@ -87,7 +85,7 @@ router.post('/', async (req, res) => {
 	}
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:steam_id', async (req, res) => {
 	const { steam_id, discord_id, first_name, last_name, role, level, is_new, active } = req.body;
 	try {
 		const result = await pool.query(
@@ -100,9 +98,8 @@ router.put('/:id', async (req, res) => {
 					level		= $6,
 					is_new		= $7,
 					active		= $8
-			 WHERE	id			= $9
-			 RETURNING	id,
-						steam_id,
+			 WHERE	steam_id	= $9
+			 RETURNING	steam_id,
 						persona_name,
 						avatar,
 						avatar_medium,
@@ -115,7 +112,7 @@ router.put('/:id', async (req, res) => {
 						is_new,
 						active,
 						last_update`,
-			[steam_id, discord_id, first_name, last_name, role, level, is_new, active, req.params.id]
+			[steam_id, discord_id, first_name, last_name, role, level, is_new, active, req.params.steam_id]
 		);
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Attendee not found' });
@@ -129,14 +126,14 @@ router.put('/:id', async (req, res) => {
 	}
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:steam_id', async (req, res) => {
 	try {
 		const result = await pool.query(
-			`DELETE FROM	attendees			
-			 WHERE	id = $1
-			 RETURNING	id,
+			`DELETE FROM	attendees
+			 WHERE	steam_id = $1
+			 RETURNING	steam_id,
 			 			discord_id`,
-			[req.params.id]
+			[req.params.steam_id]
 		);
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Attendee not found' });
