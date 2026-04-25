@@ -4,7 +4,7 @@ import GamesList from './components/GamesList';
 import AttendeesList from './components/AttendeesList';
 import ConfigEditor from './components/ConfigEditor';
 
-const Dashboard = ({ token, onLogout }) => {
+const Dashboard = ({ onLogout }) => {
 	const [navOpen, setNavOpen] = useState(false);
 	const closeNav = () => setNavOpen(false);
 
@@ -35,9 +35,9 @@ const Dashboard = ({ token, onLogout }) => {
 
 			<main className="admin-content">
 				<Routes>
-					<Route path="games" element={<GamesList token={token} />} />
-					<Route path="attendees" element={<AttendeesList token={token} />} />
-					<Route path="config" element={<ConfigEditor token={token} />} />
+					<Route path="games" element={<GamesList />} />
+					<Route path="attendees" element={<AttendeesList />} />
+					<Route path="config" element={<ConfigEditor />} />
 					<Route path="*" element={<Navigate to="/admin/games" replace />} />
 				</Routes>
 			</main>

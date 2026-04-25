@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const ConfigEditor = ({ token }) => {
+const ConfigEditor = () => {
 	const [form, setForm] = useState(null);
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [saved, setSaved] = useState(false);
 
-	const api = axios.create({
-		headers: { Authorization: `Bearer ${token}` }
-	});
+	const api = axios.create({ withCredentials: true });
 
 	useEffect(() => {
 		api.get('/api/admin/config')

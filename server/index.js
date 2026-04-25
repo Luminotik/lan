@@ -1,7 +1,8 @@
 // External packages
 import express from 'express';
-import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import cron from 'node-cron';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -15,6 +16,7 @@ import adminGamesRouter from './routes/admin/games.js';
 import adminAttendeesRouter from './routes/admin/attendees.js';
 import adminConfigRouter from './routes/admin/config.js';
 import { refreshGames, refreshAttendees } from './jobs/refresh.js';
+import { logger } from './lib/logger.js';
 
 dotenv.config();
 
@@ -26,11 +28,12 @@ const __dirname = dirname(__filename);
 
 const loginLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 10,                  // 10 attempts per window
+	max: 5,                   // 5 attempts per window
 	message: { error: 'Too many login attempts, please try again later' }
 });
 
 app.use(express.json());
+app.use(cookieParser());
 app.use('/api/auth/login', loginLimiter);
 
 app.use('/api/config', configRouter);
@@ -48,7 +51,7 @@ app.get('/{*path}', (req, res) => {
 });
 
 app.listen(PORT, () => {
-	console.log(`Server running on port ${PORT}`);
+	logger.log(`[server] Running on port ${PORT}`);
 });
 
 // Run refresh every minute

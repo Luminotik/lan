@@ -4,6 +4,7 @@ import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { lookupItadId, getBestDeal } from '../../lib/itad.js';
 import { getAppDetails } from '../../lib/steam.js';
+import { logger } from '../../lib/logger.js';
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ router.get('/', async (req, res) => {
 			price_new: parseFloat(game.price_new)
 		})));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
@@ -85,7 +86,7 @@ router.post('/', async (req, res) => {
 			price_new: parseFloat(game.price_new)
 		});
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
@@ -134,7 +135,7 @@ router.put('/:id', async (req, res) => {
 			price_new: parseFloat(game.price_new)
 		});
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
@@ -152,7 +153,7 @@ router.delete('/:id', async (req, res) => {
 		}
 		res.json({ message: 'Game deleted' });
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
@@ -186,7 +187,7 @@ router.post('/lookup', async (req, res) => {
 			price_new: deal?.price_new
 		});
 	} catch (err) {
-		console.error('[admin/games/lookup]', err);
+		logger.error('[admin/games/lookup]', err);
 		res.status(500).json({ error: 'Lookup failed' });
 	}
 });

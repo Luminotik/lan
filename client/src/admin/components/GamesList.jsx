@@ -168,14 +168,12 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 	);
 };
 
-const GamesList = ({ token }) => {
+const GamesList = () => {
 	const [games, setGames] = useState(null);
 	const [error, setError] = useState(null);
 	const [editing, setEditing] = useState(null);
 
-	const api = axios.create({
-		headers: { Authorization: `Bearer ${token}` }
-	});
+	const api = axios.create({ withCredentials: true });
 
 	useEffect(() => {
 		fetchGames();

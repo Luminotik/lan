@@ -1,6 +1,7 @@
 import express from 'express';
 
 import pool from '../db.js';
+import { logger } from '../lib/logger.js';
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ router.get('/', async (req, res) => {
 			price_new: parseFloat(game.price_new)
 		})));
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
@@ -74,7 +75,7 @@ router.get('/:id', async (req, res) => {
 			price_new: parseFloat(game.price_new)
 		});
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });

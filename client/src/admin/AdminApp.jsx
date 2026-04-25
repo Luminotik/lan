@@ -1,38 +1,40 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios';
 import Login from './Login';
 import Dashboard from './Dashboard';
 
 const AdminApp = () => {
-	const [token, setToken] = useState(null);
+	const [authenticated, setAuthenticated] = useState(false);
+	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const stored = sessionStorage.getItem('admin_token');
-		if (stored) setToken(stored);
+		axios.get('/api/auth/session')
+			.then(() => setAuthenticated(true))
+			.catch(() => setAuthenticated(false))
+			.finally(() => setLoading(false));
 	}, []);
 
-	const handleLogin = (newToken) => {
-		sessionStorage.setItem('admin_token', newToken);
-		setToken(newToken);
-	};
+	const handleLogin = () => setAuthenticated(true);
 
 	const handleLogout = () => {
-		sessionStorage.removeItem('admin_token');
-		setToken(null);
+		axios.post('/api/auth/logout').finally(() => setAuthenticated(false));
 	};
+
+	if (loading) return null;
 
 	return (
 		<Routes>
 			<Route
 				path="login"
-				element={token
+				element={authenticated
 					? <Navigate to="/admin" replace />
 					: <Login onLogin={handleLogin} />}
 			/>
 			<Route
 				path="/*"
-				element={token
-					? <Dashboard token={token} onLogout={handleLogout} />
+				element={authenticated
+					? <Dashboard onLogout={handleLogout} />
 					: <Navigate to="/admin/login" replace />}
 			/>
 		</Routes>

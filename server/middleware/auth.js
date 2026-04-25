@@ -1,18 +1,13 @@
 import jwt from 'jsonwebtoken';
 
 export function requireAuth(req, res, next) {
-	const header = req.headers.authorization;
-
-	if (!header?.startsWith('Bearer ')) {
-		return res.status(401).json({ error: 'Unauthorized' });
-	}
-
-	const token = header.split(' ')[1];
+	const token = req.cookies.admin_token;
+	if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
 	try {
-		jwt.verify(token, process.env.JWT_SECRET);
+		req.user = jwt.verify(token, process.env.JWT_SECRET);
 		next();
-	} catch (err) {
-		return res.status(401).json({ error: 'Invalid or expired token' });
+	} catch {
+		res.status(401).json({ error: 'Invalid or expired token' });
 	}
 }

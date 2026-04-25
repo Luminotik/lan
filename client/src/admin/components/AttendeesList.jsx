@@ -7,12 +7,10 @@ const emptyAttendee = {
 	steam_id: '',
 	first_name: '',
 	last_name: '',
-	phone: '',
 	active: true,
 	role: 3,
 	level: 1,
-	is_new: false,
-	sms_notifications: false
+	is_new: false
 };
 
 const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
@@ -159,9 +157,6 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 							<label>Last Name</label>
 							<input value={form.last_name || ''} onChange={e => set('last_name', e.target.value)} />
 
-							<label>Phone</label>
-							<input value={form.phone || ''} onChange={e => set('phone', e.target.value)} />
-
 							<label>Role</label>
 							<select value={form.role ?? 3} onChange={e => set('role', parseInt(e.target.value))}>
 								<option value={1}>Host</option>
@@ -179,7 +174,6 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 							<div className="admin-form-checks">
 								<label><input type="checkbox" checked={form.active ?? true} onChange={e => set('active', e.target.checked)} /> Active</label>
 								<label><input type="checkbox" checked={form.is_new || false} onChange={e => set('is_new', e.target.checked)} /> New</label>
-								<label><input type="checkbox" checked={form.sms_notifications || false} onChange={e => set('sms_notifications', e.target.checked)} /> SMS</label>
 							</div>
 
 							{error && <div className="admin-error">{error}</div>}
@@ -198,14 +192,12 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 	);
 };
 
-const AttendeesList = ({ token }) => {
+const AttendeesList = () => {
 	const [attendees, setAttendees] = useState(null);
 	const [error, setError] = useState(null);
 	const [editing, setEditing] = useState(null);
 
-	const api = axios.create({
-		headers: { Authorization: `Bearer ${token}` }
-	});
+	const api = axios.create({ withCredentials: true });
 
 	useEffect(() => {
 		fetchAttendees();

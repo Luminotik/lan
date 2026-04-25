@@ -13,7 +13,7 @@ const Login = ({ onLogin }) => {
 
 		try {
 			const res = await axios.post('/api/auth/login', { password });
-			onLogin(res.data.token);
+			onLogin();
 		} catch (err) {
 			setError('Invalid password');
 		} finally {

@@ -82,9 +82,6 @@ CREATE TABLE public.attendees (
     discord_id text,
     first_name character varying(100),
     last_name character varying(100),
-    phone character varying(20),
-    sms_notifications boolean DEFAULT false NOT NULL,
-    last_notification bigint DEFAULT 0 NOT NULL,
     role integer,
     level integer DEFAULT 1 NOT NULL,
     is_new boolean DEFAULT false NOT NULL,
@@ -127,10 +124,7 @@ CREATE TABLE public.config (
     show_inactive_games boolean DEFAULT false NOT NULL,
     show_inactive_attendees boolean DEFAULT false NOT NULL,
     update_inactive_games boolean DEFAULT false NOT NULL,
-    update_inactive_attendees boolean DEFAULT false NOT NULL,
-    site_name character varying(100) DEFAULT ''::character varying NOT NULL,
-    site_url text DEFAULT ''::text NOT NULL,
-    vcf_url text DEFAULT ''::text NOT NULL
+    update_inactive_attendees boolean DEFAULT false NOT NULL
 );
 
 

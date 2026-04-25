@@ -4,6 +4,7 @@ import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { getPlayerSummaries } from '../../lib/steam.js';
 import { syncAttendeeRoles, validateMembership } from '../../lib/discord.js';
+import { logger } from '../../lib/logger.js';
 
 const router = express.Router();
 
@@ -21,9 +22,6 @@ router.get('/', async (req, res) => {
 					discord_id,
 					first_name,
 					last_name,
-					phone,
-					sms_notifications,
-					last_notification,
 					role,
 					level,
 					is_new,
@@ -38,13 +36,13 @@ router.get('/', async (req, res) => {
 		);
 		res.json(result.rows);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
 
 router.post('/', async (req, res) => {
-	const { steam_id, discord_id, first_name, last_name, phone, sms_notifications, role, level, is_new, active } = req.body;
+	const { steam_id, discord_id, first_name, last_name, role, level, is_new, active } = req.body;
 	try {
 		const result = await pool.query(
 			`INSERT INTO	attendees (
@@ -52,16 +50,13 @@ router.post('/', async (req, res) => {
 								discord_id,
 								first_name,
 								last_name,
-								phone,
-								sms_notifications,
-								last_notification,
 								role,
 								level,
 								is_new,
 								active,
 								last_update
 							)
-			 VALUES	($1, $2, $3, $4, $5, $6, 0, $7, $8, $9, $10, 0)
+			 VALUES	($1, $2, $3, $4, $5, $6, $7, $8, 0)
 			 RETURNING	id,
 						steam_id,
 						persona_name,
@@ -71,41 +66,36 @@ router.post('/', async (req, res) => {
 						discord_id,
 						first_name,
 						last_name,
-						phone,
-						sms_notifications,
-						last_notification,
 						role,
 						level,
 						is_new,
 						active,
 						last_update`,
-			[steam_id, discord_id, first_name, last_name, phone, sms_notifications, role, level, is_new, active]
+			[steam_id, discord_id, first_name, last_name, role, level, is_new, active]
 		);
 		const attendee = result.rows[0];
 		await syncAttendeeRoles(attendee);
 		res.status(201).json(attendee);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
 
 router.put('/:id', async (req, res) => {
-	const { steam_id, discord_id, first_name, last_name, phone, sms_notifications, role, level, is_new, active } = req.body;
+	const { steam_id, discord_id, first_name, last_name, role, level, is_new, active } = req.body;
 	try {
 		const result = await pool.query(
-			`UPDATE	attendees		
-			 SET	steam_id			= $1,
-			 		discord_id			= $2,
-					first_name			= $3,
-					last_name			= $4,
-					phone				= $5,
-					sms_notifications	= $6,
-					role				= $7,
-					level				= $8,
-					is_new				= $9,
-					active				= $10
-			 WHERE	id					= $11
+			`UPDATE	attendees
+			 SET	steam_id	= $1,
+			 		discord_id	= $2,
+					first_name	= $3,
+					last_name	= $4,
+					role		= $5,
+					level		= $6,
+					is_new		= $7,
+					active		= $8
+			 WHERE	id			= $9
 			 RETURNING	id,
 						steam_id,
 						persona_name,
@@ -115,15 +105,12 @@ router.put('/:id', async (req, res) => {
 						discord_id,
 						first_name,
 						last_name,
-						phone,
-						sms_notifications,
-						last_notification,
 						role,
 						level,
 						is_new,
 						active,
 						last_update`,
-			[steam_id, discord_id, first_name, last_name, phone, sms_notifications, role, level, is_new, active, req.params.id]
+			[steam_id, discord_id, first_name, last_name, role, level, is_new, active, req.params.id]
 		);
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Attendee not found' });
@@ -132,7 +119,7 @@ router.put('/:id', async (req, res) => {
 		await syncAttendeeRoles(attendee);
 		res.json(attendee);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
@@ -153,7 +140,7 @@ router.delete('/:id', async (req, res) => {
 		await syncAttendeeRoles({ ...deleted, active: false });
 		res.json({ message: 'Attendee deleted' });
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
@@ -189,7 +176,7 @@ router.post('/lookup', async (req, res) => {
 			discord_id: discord_id || null
 		});
 	} catch (err) {
-		console.error('[admin/attendees/lookup]', err);
+		logger.error('[admin/attendees/lookup]', err);
 		res.status(500).json({ error: 'Lookup failed' });
 	}
 });

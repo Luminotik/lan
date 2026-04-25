@@ -1,6 +1,7 @@
 import express from 'express';
 
 import pool from '../db.js';
+import { logger } from '../lib/logger.js';
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ router.get('/', async (req, res) => {
 		);
 		res.json(result.rows);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
@@ -68,7 +69,7 @@ router.get('/:id', async (req, res) => {
 		}
 		res.json(result.rows[0]);
 	} catch (err) {
-		console.error(err);
+		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
 	}
 });
