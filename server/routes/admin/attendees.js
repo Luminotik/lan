@@ -42,11 +42,15 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-	const { steam_id, discord_id, first_name, last_name, role, level, is_new, active } = req.body;
+	const { steam_id, persona_name, avatar, avatar_medium, avatar_full, discord_id, first_name, last_name, role, level, is_new, active } = req.body;
 	try {
 		const result = await pool.query(
 			`INSERT INTO	attendees (
 								steam_id,
+								persona_name,
+								avatar,
+								avatar_medium,
+								avatar_full,
 								discord_id,
 								first_name,
 								last_name,
@@ -56,7 +60,7 @@ router.post('/', async (req, res) => {
 								active,
 								last_update
 							)
-			 VALUES	($1, $2, $3, $4, $5, $6, $7, $8, 0)
+			 VALUES	($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 			 RETURNING	id,
 						steam_id,
 						persona_name,
@@ -71,7 +75,7 @@ router.post('/', async (req, res) => {
 						is_new,
 						active,
 						last_update`,
-			[steam_id, discord_id, first_name, last_name, role, level, is_new, active]
+			[steam_id, persona_name, avatar, avatar_medium, avatar_full, discord_id, first_name, last_name, role, level, is_new, active, Date.now()]
 		);
 		const attendee = result.rows[0];
 		await syncAttendeeRoles(attendee);
