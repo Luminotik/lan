@@ -21,7 +21,7 @@ const Dashboard = ({ onLogout }) => {
 
 			<aside className={`admin-sidebar ${navOpen ? 'open' : ''}`}>
 				<div className="admin-sidebar-header">
-					<h1>Lynx<span className="text-blue">LAN</span></h1>
+					<a href="/"><h1>Lynx<span className="text-blue">LAN</span></h1></a>
 					<span className="text-ultralight">Admin</span>
 				</div>
 				<nav className="admin-nav">
