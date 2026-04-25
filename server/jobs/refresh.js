@@ -58,7 +58,8 @@ export async function refreshGames() {
 				is_free,
 				url,
 				price_old,
-				price_new
+				price_new,
+				active
 		 FROM	games
 		 WHERE	last_update < $1
 		 ${flags.update_inactive_games ? '' : 'AND	active = true'}`,
@@ -102,7 +103,7 @@ export async function refreshGames() {
 			}
 
 			const existingPriceNew = parseFloat(game.price_new);
-			if (priceNew < existingPriceNew) {
+			if (game.active && priceNew < existingPriceNew) {
 				drops.push({ name, price_new: priceNew, price_old: existingPriceNew, steam_appid: game.steam_appid });
 			}
 
