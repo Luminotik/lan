@@ -59,6 +59,6 @@ app.listen(PORT, () => {
 
 // Run refresh every minute
 cron.schedule('* * * * *', () => {
-	refreshGames();
-	refreshAttendees();
+	refreshGames().catch(err => logger.error('Unhandled error in refreshGames', err));
+	refreshAttendees().catch(err => logger.error('Unhandled error in refreshAttendees', err));
 });
