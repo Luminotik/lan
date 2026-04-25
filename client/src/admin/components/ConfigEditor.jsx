@@ -7,13 +7,65 @@ const ConfigEditor = () => {
 	const [loading, setLoading] = useState(false);
 	const [saved, setSaved] = useState(false);
 
+	const [shops, setShops] = useState(null);
+	const [shopsLoading, setShopsLoading] = useState(false);
+	const [shopsError, setShopsError] = useState(null);
+	const [selectedShops, setSelectedShops] = useState(new Set());
+	const [shopsSaved, setShopsSaved] = useState(false);
+	const [shopsSaving, setShopsSaving] = useState(false);
+
 	const api = axios.create({ withCredentials: true });
 
 	useEffect(() => {
 		api.get('/api/admin/config')
 			.then(res => setForm(res.data))
 			.catch(() => setError('Failed to load config'));
+		api.get('/api/admin/itad/trusted-shops')
+			.then(res => {
+				const ids = res.data.trusted_shops
+					? res.data.trusted_shops.split(',').map(s => s.trim()).filter(Boolean)
+					: [];
+				setSelectedShops(new Set(ids));
+			})
+			.catch(() => {});
 	}, []);
+
+	const loadShops = async () => {
+		setShopsLoading(true);
+		setShopsError(null);
+		try {
+			const res = await api.get('/api/admin/itad/shops');
+			setShops(res.data);
+		} catch {
+			setShopsError('Failed to load shops from ITAD');
+		} finally {
+			setShopsLoading(false);
+		}
+	};
+
+	const toggleShop = (id) => {
+		const key = String(id);
+		setSelectedShops(prev => {
+			const next = new Set(prev);
+			next.has(key) ? next.delete(key) : next.add(key);
+			return next;
+		});
+	};
+
+	const saveShops = async () => {
+		setShopsSaving(true);
+		try {
+			await api.put('/api/admin/itad/trusted-shops', {
+				trusted_shops: [...selectedShops].join(',')
+			});
+			setShopsSaved(true);
+			setTimeout(() => setShopsSaved(false), 3000);
+		} catch {
+			setShopsError('Failed to save trusted shops');
+		} finally {
+			setShopsSaving(false);
+		}
+	};
 
 	const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -134,6 +186,57 @@ const ConfigEditor = () => {
 						/> Update Inactive Attendees
 					</label>
 				</div>
+
+				<h3>Trusted Shops</h3>
+
+				<div className="admin-form-inline">
+					<button
+						className="admin-btn admin-btn-secondary"
+						onClick={loadShops}
+						disabled={shopsLoading}
+					>
+						{shopsLoading ? 'Loading...' : 'Load Shops'}
+					</button>
+					{shopsSaved && <span className="admin-success">Saved!</span>}
+					{shopsError && <span className="admin-error">{shopsError}</span>}
+				</div>
+
+				{shops && (
+					<>
+						<table className="admin-table">
+							<thead>
+								<tr>
+									<th>Trusted</th>
+									<th>Shop</th>
+								</tr>
+							</thead>
+							<tbody>
+								{[...shops].sort((a, b) => a.title.localeCompare(b.title)).map(shop => (
+									<tr key={shop.id} onClick={() => toggleShop(shop.id)} style={{ cursor: 'pointer' }}>
+										<td>
+											<input
+												type="checkbox"
+												checked={selectedShops.has(String(shop.id))}
+												onChange={() => toggleShop(shop.id)}
+												onClick={e => e.stopPropagation()}
+											/>
+										</td>
+										<td>{shop.title}</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+						<div>
+							<button
+								className="admin-btn admin-btn-primary"
+								onClick={saveShops}
+								disabled={shopsSaving}
+							>
+								{shopsSaving ? 'Saving...' : 'Save Shops'}
+							</button>
+						</div>
+					</>
+				)}
 			</div>
 		</div>
 	);

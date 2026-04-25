@@ -44,7 +44,7 @@ const Attendees = ({ attendees }) => {
 							</div>
 						))
 						: attendees.map(attendee => (
-							<AttendeeCard key={attendee.id} attendee={attendee} />
+							<AttendeeCard key={attendee.steam_id} attendee={attendee} />
 						))
 					}
 				</div>

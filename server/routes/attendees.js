@@ -15,8 +15,7 @@ router.get('/', async (req, res) => {
 		const { show_inactive_attendees } = configResult.rows[0];
 
 		const result = await pool.query(
-			`SELECT	id, 
-					steam_id, 
+			`SELECT	steam_id,
 					persona_name,
 					avatar,
 					avatar_medium,
@@ -26,11 +25,11 @@ router.get('/', async (req, res) => {
 					role,
 					level,
 					is_new
-			 FROM	attendees 
+			 FROM	attendees
 			 ${show_inactive_attendees ? '' : 'WHERE	active = true'}
-			 ORDER BY	role ASC, 
+			 ORDER BY	role ASC,
 						level DESC,
-						is_new ASC, 
+						is_new ASC,
 						first_name ASC`
 		);
 		res.json(result.rows);
@@ -40,7 +39,7 @@ router.get('/', async (req, res) => {
 	}
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:steam_id', async (req, res) => {
 	try {
 		const configResult = await pool.query(
 			`SELECT	show_inactive_attendees
@@ -49,8 +48,7 @@ router.get('/:id', async (req, res) => {
 		const { show_inactive_attendees } = configResult.rows[0];
 
 		const result = await pool.query(
-			`SELECT	id, 
-					steam_id, 
+			`SELECT	steam_id,
 					persona_name,
 					avatar,
 					avatar_medium,
@@ -60,10 +58,10 @@ router.get('/:id', async (req, res) => {
 					role,
 					level,
 					is_new
-			 FROM	attendees 
-			 WHERE	id = $1
+			 FROM	attendees
+			 WHERE	steam_id = $1
 			 ${show_inactive_attendees ? '' : 'AND	active = true'}`,
-			[req.params.id]
+			[req.params.steam_id]
 		);
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Attendee not found' });

@@ -16,6 +16,7 @@ import adminGamesRouter from './routes/admin/games.js';
 import adminAttendeesRouter from './routes/admin/attendees.js';
 import adminConfigRouter from './routes/admin/config.js';
 import adminNotifyRouter from './routes/admin/notify.js';
+import adminItadRouter from './routes/admin/itad.js';
 import { refreshGames, refreshAttendees } from './jobs/refresh.js';
 import { createLogger } from './lib/logger.js';
 const logger = createLogger('server');
@@ -46,6 +47,7 @@ app.use('/api/admin/games', adminGamesRouter);
 app.use('/api/admin/attendees', adminAttendeesRouter);
 app.use('/api/admin/config', adminConfigRouter);
 app.use('/api/admin/notify', adminNotifyRouter);
+app.use('/api/admin/itad', adminItadRouter);
 
 app.use(express.static(join(__dirname, '../client/dist')));
 

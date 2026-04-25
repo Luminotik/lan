@@ -7,12 +7,21 @@ async function getItadConfig() {
 		`SELECT	api_key,
 				url_lookup_game,
 				url_get_current_prices,
+				url_get_shops,
 				country,
 				trusted_shops
 		 FROM	api_itad
 		 LIMIT	1`
 	);
 	return rows[0];
+}
+
+// Get all shops available in ITAD. Returns an array of { id, title } objects.
+export async function getShops() {
+	const itad = await getItadConfig();
+	const url = itad.url_get_shops.replace('{key}', itad.api_key);
+	const res = await fetch(url);
+	return await res.json();
 }
 
 // Find the ITAD ID for a given Steam App ID. Returns the ID or null if not found.
