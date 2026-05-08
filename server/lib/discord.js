@@ -12,7 +12,10 @@ async function getDiscordConfig() {
 		`SELECT	bot_token,
 				server_id,
 				url_member,
-				url_member_role
+				url_member_role,
+				url_private_message,
+				url_channel_message,
+				admin_user_id
 		 FROM	api_discord
 		 LIMIT	1`
 	);
@@ -80,7 +83,7 @@ async function discordRequest(url, options = {}, attempt = 1) {
 		const retryAfter = parseFloat(res.headers.get('retry-after') ?? '1');
 
 		if (attempt > 3) {
-			logger.error(`Rate limited after 3 retries on ${url}, giving up`);
+			logger.alert(`Rate limited after 3 retries on ${url}, giving up`);
 			return res;
 		}
 
@@ -154,15 +157,35 @@ export async function syncAttendeeRoles(attendee) {
 
 // Send a message to a Discord channel.
 export async function sendChannelMessage(channelId, payload) {
-	const url = `https://discord.com/api/v10/channels/${channelId}/messages`;
+	const config = await getDiscordConfig();
+	if (!config.url_channel_message) {
+		logger.error('url_channel_message is not configured in api_discord');
+		return;
+	}
+	const url = config.url_channel_message.replace('{channel_id}', channelId);
 	const res = await discordRequest(url, {
 		method: 'POST',
 		body: JSON.stringify(payload)
 	});
 	if (!res.ok) {
 		const body = await res.text();
-		logger.error(`Failed to send channel message to ${channelId}: ${res.status} ${body}`);
+		logger.alert(`Failed to send channel message to ${channelId}: ${res.status} ${body}`);
 	}
+}
+
+// Send a DM alert to the configured admin user.
+export async function sendAdminAlert(message) {
+	const config = await getDiscordConfig();
+	if (!config.admin_user_id || !config.url_private_message) return;
+
+	const dmRes = await discordRequest(config.url_private_message, {
+		method: 'POST',
+		body: JSON.stringify({ recipient_id: config.admin_user_id })
+	});
+	if (!dmRes.ok) return;
+
+	const dm = await dmRes.json();
+	await sendChannelMessage(dm.id, { content: message });
 }
 
 // Validate membership of a user in the Discord server.

@@ -29,7 +29,7 @@ const GameCard = ({ game }) => {
 	};
 
 	return (
-		<div className={`game game-${game.steam_appid}`}>
+		<div className={`game game-${game.id}`}>
 			<a href={game.is_gamepass ? game.gamepass_url : game.url}>
 				<img className="game-banner" src={game.header_image} alt={game.name} />
 				<div className="game-details">

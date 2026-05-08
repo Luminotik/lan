@@ -120,9 +120,9 @@ export async function refreshGames() {
 				[now, name, headerImage, isFree, priceNew, priceOld, url, game.id]
 			);
 
-			logger.log(`Updated game: ${game.steam_appid}`);
+			logger.log(`Updated game: ${game.name}`);
 		} catch (err) {
-			logger.error(`Failed to refresh game ${game.steam_appid}:`, err.message);
+			logger.alert(`Failed to refresh game ${game.name}:`, err.message);
 		}
 	}
 
@@ -168,7 +168,7 @@ export async function refreshAttendees() {
 			await syncOwnedGames(player.steamid);
 			logger.log(`Updated attendee: ${player.personaname}`);
 		} catch (err) {
-			logger.error(`Failed to update attendee ${player.steamid}:`, err.message);
+			logger.alert(`Failed to update attendee ${player.steamid}:`, err.message);
 		}
 	}
 }

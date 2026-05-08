@@ -50,10 +50,21 @@ function write(stream, ...args) {
 	}
 }
 
+let _alertFn = null;
+
+export function registerAlertFn(fn) {
+	_alertFn = fn;
+}
+
+function fireAlert(line) {
+	if (_alertFn) _alertFn(line).catch(err => write(process.stderr, '[logger]', 'Failed to send alert:', err.message));
+}
+
 export const logger = {
 	log:   (...args) => write(process.stdout, ...args),
 	error: (...args) => write(process.stderr, ...args),
 	warn:  (...args) => write(process.stderr, ...args),
+	alert: (...args) => { write(process.stderr, ...args); fireAlert(args.map(format).join(' ')); },
 };
 
 export function createLogger(tag) {
@@ -62,5 +73,6 @@ export function createLogger(tag) {
 		log:   (...args) => write(process.stdout, prefix, ...args),
 		error: (...args) => write(process.stderr, prefix, ...args),
 		warn:  (...args) => write(process.stderr, prefix, ...args),
+		alert: (...args) => { write(process.stderr, prefix, ...args); fireAlert(`${prefix} ${args.map(format).join(' ')}`); },
 	};
 }

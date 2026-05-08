@@ -8,6 +8,7 @@ async function getItadConfig() {
 				url_lookup_game,
 				url_get_current_prices,
 				url_get_shops,
+				url_search_games,
 				country,
 				trusted_shops
 		 FROM	api_itad
@@ -22,6 +23,17 @@ export async function getShops() {
 	const url = itad.url_get_shops.replace('{key}', itad.api_key);
 	const res = await fetch(url);
 	return await res.json();
+}
+
+// Search ITAD for games matching a title. Returns an array of { id, title } results.
+export async function searchItadByName(title) {
+	const itad = await getItadConfig();
+	const url = itad.url_search_games
+		.replace('{key}', itad.api_key)
+		.replace('{title}', encodeURIComponent(title));
+	const res = await fetch(url);
+	const json = await res.json();
+	return json.map(g => ({ id: g.id, title: g.title }));
 }
 
 // Find the ITAD ID for a given Steam App ID. Returns the ID or null if not found.

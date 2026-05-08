@@ -25,6 +25,8 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 	const [validated, setValidated] = useState(!!game.id); // Existing games are pre-validated
 	const [appIdInput, setAppIdInput] = useState(game.steam_appid || '');
 	const [validating, setValidating] = useState(false);
+	const [itadResults, setItadResults] = useState(null);
+	const [itadSearching, setItadSearching] = useState(false);
 
 	const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -60,6 +62,20 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 			setError(err.response?.data?.error || 'Validation failed');
 		} finally {
 			setValidating(false);
+		}
+	};
+
+	const handleItadSearch = async () => {
+		if (!form.name?.trim()) return;
+		setItadSearching(true);
+		setItadResults(null);
+		try {
+			const res = await api.get(`/api/admin/itad/search?title=${encodeURIComponent(form.name.trim())}`);
+			setItadResults(res.data);
+		} catch {
+			setItadResults([]);
+		} finally {
+			setItadSearching(false);
 		}
 	};
 
@@ -111,6 +127,7 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 							{error && <div className="admin-error">{error}</div>}
 							<div className="admin-form-actions">
 								<button className="admin-btn admin-btn-secondary" onClick={onCancel}>Cancel</button>
+								<button className="admin-btn admin-btn-secondary" onClick={() => setValidated(true)}>Manual Entry</button>
 							</div>
 						</>
 					) : (
@@ -119,28 +136,60 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 							<input value={form.name || ''} onChange={e => set('name', e.target.value)} />
 
 							<label>Steam App ID</label>
-							<input value={form.steam_appid || ''} disabled />
+							<input
+								value={form.steam_appid || ''}
+								onChange={e => set('steam_appid', e.target.value)}
+								placeholder="Leave blank for non-Steam games"
+							/>
 
 							<label>ITAD ID</label>
-							<input value={form.itad_id || ''} disabled />
+							<div className="admin-form-inline">
+								<input
+									value={form.itad_id || ''}
+									onChange={e => { set('itad_id', e.target.value); setItadResults(null); }}
+									placeholder="Leave blank to skip price tracking"
+								/>
+								<button
+									className="admin-btn admin-btn-secondary"
+									onClick={handleItadSearch}
+									disabled={itadSearching || !form.name?.trim()}
+									type="button"
+								>
+									{itadSearching ? 'Searching...' : 'Find on ITAD'}
+								</button>
+							</div>
+							{itadResults !== null && (
+								itadResults.length === 0
+									? <div className="admin-error">No results found</div>
+									: <select
+										size={Math.min(itadResults.length, 5)}
+										onChange={e => { set('itad_id', e.target.value); setItadResults(null); }}
+										value=""
+									>
+										<option value="" disabled>Select a match...</option>
+										{itadResults.map(r => (
+											<option key={r.id} value={r.id}>{r.title} ({r.id})</option>
+										))}
+									</select>
+							)}
 
 							<label>Header Image URL</label>
 							<input value={form.header_image || ''} onChange={e => set('header_image', e.target.value)} />
 
 							<label>Store URL</label>
-							<input value={form.url || ''} disabled />
+							<input value={form.url || ''} onChange={e => set('url', e.target.value)} />
 
 							<label>Price (Regular)</label>
-							<input type="number" value={form.price_old ?? ''} disabled />
+							<input type="number" value={form.price_old ?? ''} onChange={e => set('price_old', e.target.value)} />
 
 							<label>Price (Current)</label>
-							<input type="number" value={form.price_new ?? ''} disabled />
+							<input type="number" value={form.price_new ?? ''} onChange={e => set('price_new', e.target.value)} />
 
 							<label>Priority</label>
 							<input type="number" value={form.priority ?? 999} onChange={e => set('priority', parseInt(e.target.value))} />
 
 							<div className="admin-form-checks">
-								<label><input type="checkbox" checked={form.is_free || false} disabled /> Free</label>
+								<label><input type="checkbox" checked={form.is_free || false} onChange={e => set('is_free', e.target.checked)} /> Free</label>
 								<label><input type="checkbox" checked={form.is_gamepass || false} onChange={e => set('is_gamepass', e.target.checked)} /> Game Pass</label>
 								<label><input type="checkbox" checked={form.active ?? true} onChange={e => set('active', e.target.checked)} /> Active</label>
 							</div>

@@ -18,8 +18,11 @@ import adminConfigRouter from './routes/admin/config.js';
 import adminNotifyRouter from './routes/admin/notify.js';
 import adminItadRouter from './routes/admin/itad.js';
 import { refreshGames, refreshAttendees } from './jobs/refresh.js';
-import { createLogger } from './lib/logger.js';
+import { createLogger, registerAlertFn } from './lib/logger.js';
+import { sendAdminAlert } from './lib/discord.js';
 const logger = createLogger('server');
+
+registerAlertFn(sendAdminAlert);
 
 dotenv.config();
 
@@ -57,10 +60,11 @@ app.get('/{*path}', (req, res) => {
 
 app.listen(PORT, () => {
 	logger.log(`Running on port ${PORT}`);
+	logger.alert(`Server started on port ${PORT}`);
 });
 
 // Run refresh every minute
 cron.schedule('* * * * *', () => {
-	refreshGames().catch(err => logger.error('Unhandled error in refreshGames', err));
-	refreshAttendees().catch(err => logger.error('Unhandled error in refreshAttendees', err));
+	refreshGames().catch(err => logger.alert('Unhandled error in refreshGames', err));
+	refreshAttendees().catch(err => logger.alert('Unhandled error in refreshAttendees', err));
 });

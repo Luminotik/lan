@@ -17,7 +17,7 @@ const pool = new Pool({
 const logger = createLogger('db');
 
 pool.on('error', (err) => {
-	logger.error('Unexpected database pool error', err);
+	logger.alert('Unexpected database pool error', err);
 });
 
 export default pool;
