@@ -1,4 +1,4 @@
-FROM node:22-alpine AS client-builder
+FROM node:24-alpine AS client-builder
 
 WORKDIR /app
 COPY client/package*.json ./client/
@@ -7,7 +7,7 @@ COPY client ./client
 RUN cd client && npm run build
 
 
-FROM node:22-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
