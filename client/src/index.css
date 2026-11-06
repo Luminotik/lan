@@ -1028,3 +1028,26 @@ h6 {
 .admin-form-inline input {
 	flex: 1;
 }
+
+.admin-banner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	background: rgba(255, 107, 107, 0.12);
+	border: 1px solid #ff6b6b;
+	border-radius: 0.25rem;
+	color: #ff6b6b;
+	padding: 0.6rem 0.75rem;
+	margin-bottom: 1rem;
+	font-size: 0.9rem;
+}
+
+.admin-banner-close {
+	background: none;
+	border: none;
+	color: inherit;
+	font-size: 1.25rem;
+	line-height: 1;
+	cursor: pointer;
+}

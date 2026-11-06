@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 
 const Notifications = () => {
 	const [message, setMessage] = useState('');
@@ -7,8 +7,6 @@ const Notifications = () => {
 	const [loading, setLoading] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const [error, setError] = useState(null);
-
-	const api = axios.create({ withCredentials: true });
 
 	const handleSend = async () => {
 		if (!message.trim()) return;

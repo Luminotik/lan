@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import axios from 'axios';
+import api from './api';
 import Login from './Login';
 import Dashboard from './Dashboard';
 
@@ -9,7 +9,7 @@ const AdminApp = () => {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		axios.get('/api/auth/session')
+		api.get('/api/auth/session')
 			.then(() => setAuthenticated(true))
 			.catch(() => setAuthenticated(false))
 			.finally(() => setLoading(false));
@@ -18,7 +18,7 @@ const AdminApp = () => {
 	const handleLogin = () => setAuthenticated(true);
 
 	const handleLogout = () => {
-		axios.post('/api/auth/logout').finally(() => setAuthenticated(false));
+		api.post('/api/auth/logout').finally(() => setAuthenticated(false));
 	};
 
 	if (loading) return null;

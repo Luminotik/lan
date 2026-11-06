@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
+import Banner from './Banner';
 
 import PaginatedList from './PaginatedList';
 
@@ -13,7 +14,7 @@ const emptyAttendee = {
 	is_new: false
 };
 
-const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
+const AttendeeForm = ({ attendee, onSave, onCancel }) => {
 	const isNew = !attendee.steam_id; // Captured at open; steam_id gets populated by validation
 	const [form, setForm] = useState(attendee);
 	const [error, setError] = useState(null);
@@ -83,12 +84,10 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 		setLoading(true);
 		setError(null);
 		try {
-			if (isNew) {
-				await api.post('/api/admin/attendees', form);
-			} else {
-				await api.put(`/api/admin/attendees/${form.steam_id}`, form);
-			}
-			onSave();
+			const res = isNew
+				? await api.post('/api/admin/attendees', form)
+				: await api.put(`/api/admin/attendees/${form.steam_id}`, form);
+			onSave(res.data?.discord_warning);
 		} catch (err) {
 			setError(err.response?.data?.error || 'Failed to save attendee');
 		} finally {
@@ -195,23 +194,22 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 
 const AttendeesList = () => {
 	const [attendees, setAttendees] = useState(null);
-	const [error, setError] = useState(null);
+	const [error, setError] = useState(null);   // Load failure: nothing to show
+	const [notice, setNotice] = useState(null); // Action failure or warning: keep the list visible
 	const [editing, setEditing] = useState(null);
-
-	const api = axios.create({ withCredentials: true });
-
-	useEffect(() => {
-		fetchAttendees();
-	}, []);
 
 	const fetchAttendees = async () => {
 		try {
 			const res = await api.get('/api/admin/attendees');
 			setAttendees(res.data);
-		} catch (err) {
+		} catch {
 			setError('Failed to load attendees');
 		}
 	};
+
+	useEffect(() => {
+		fetchAttendees();
+	}, []);
 
 	const toggleActive = async (attendee) => {
 		// Optimistically update UI immediately
@@ -220,31 +218,34 @@ const AttendeesList = () => {
 		));
 
 		try {
-			await api.put(`/api/admin/attendees/${attendee.steam_id}`, {
+			const res = await api.put(`/api/admin/attendees/${attendee.steam_id}`, {
 				...attendee,
 				active: !attendee.active
 			});
+			if (res.data?.discord_warning) setNotice(res.data.discord_warning);
 		} catch (err) {
 			// Revert on failure
 			setAttendees(prev => prev.map(a =>
 				a.steam_id === attendee.steam_id ? { ...a, active: attendee.active } : a
 			));
-			setError('Failed to update attendee');
+			setNotice(err.response?.data?.error || 'Failed to update attendee');
 		}
 	};
 
 	const deleteAttendee = async (steam_id) => {
 		if (!confirm('Are you sure you want to delete this attendee?')) return;
 		try {
-			await api.delete(`/api/admin/attendees/${steam_id}`);
+			const res = await api.delete(`/api/admin/attendees/${steam_id}`);
+			if (res.data?.discord_warning) setNotice(res.data.discord_warning);
 			fetchAttendees();
 		} catch (err) {
-			setError('Failed to delete attendee');
+			setNotice(err.response?.data?.error || 'Failed to delete attendee');
 		}
 	};
 
-	const handleSave = () => {
+	const handleSave = (warning) => {
 		setEditing(null);
+		if (warning) setNotice(warning);
 		fetchAttendees();
 	};
 
@@ -258,13 +259,13 @@ const AttendeesList = () => {
 					attendee={editing}
 					onSave={handleSave}
 					onCancel={() => setEditing(null)}
-					api={api}
 				/>
 			)}
 			<div className="admin-section-header">
 				<h2>Attendees</h2>
 				<button className="admin-btn admin-btn-primary" onClick={() => setEditing(emptyAttendee)}>Add Attendee</button>
 			</div>
+			<Banner message={notice} onDismiss={() => setNotice(null)} />
 
 			<PaginatedList
 				items={attendees}

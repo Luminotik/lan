@@ -2,6 +2,7 @@ import express from 'express';
 
 import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { toIntOrNull } from '../../lib/numbers.js';
 import { createLogger } from '../../lib/logger.js';
 const logger = createLogger('admin/config');
 
@@ -23,7 +24,17 @@ router.get('/', async (req, res) => {
 });
 
 router.put('/', async (req, res) => {
-	const { event_date, motd_title, motd_body, use_twitch, game_ttl, attendee_ttl, show_inactive_games, show_inactive_attendees, update_inactive_games, update_inactive_attendees } = req.body;
+	const { event_date, motd_title, motd_body, use_twitch, show_inactive_games, show_inactive_attendees, update_inactive_games, update_inactive_attendees } = req.body;
+
+	if (!event_date || Number.isNaN(new Date(event_date).getTime())) {
+		return res.status(400).json({ error: 'A valid event date is required' });
+	}
+	const game_ttl = toIntOrNull(req.body.game_ttl);
+	const attendee_ttl = toIntOrNull(req.body.attendee_ttl);
+	if (game_ttl === null || game_ttl < 0 || attendee_ttl === null || attendee_ttl < 0) {
+		return res.status(400).json({ error: 'TTLs must be non-negative whole milliseconds' });
+	}
+
 	try {
 		const result = await pool.query(
 			`UPDATE	config

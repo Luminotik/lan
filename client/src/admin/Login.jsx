@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from './api';
 
 const Login = ({ onLogin }) => {
 	const [password, setPassword] = useState('');
@@ -12,10 +12,11 @@ const Login = ({ onLogin }) => {
 		setError(null);
 
 		try {
-			const res = await axios.post('/api/auth/login', { password });
+			await api.post('/api/auth/login', { password });
 			onLogin();
 		} catch (err) {
-			setError('Invalid password');
+			// Surface the server's message so a rate-limit lockout isn't reported as a wrong password
+			setError(err.response?.data?.error || 'Login failed');
 		} finally {
 			setLoading(false);
 		}

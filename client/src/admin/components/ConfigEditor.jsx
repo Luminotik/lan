@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
+import Banner from './Banner';
+
+const MS_PER_HOUR = 1000 * 60 * 60;
+// TTLs are stored as whole milliseconds (BIGINT); edited as hours. Blank stays blank
+// so the field can be cleared while typing; handleSubmit rejects it.
+const msToHours = (ms) => (ms === '' || ms === null ? '' : Number(ms) / MS_PER_HOUR);
+const hoursToMs = (hours) => (hours === '' ? '' : Math.round(parseFloat(hours) * MS_PER_HOUR));
 
 const ConfigEditor = () => {
 	const [form, setForm] = useState(null);
-	const [error, setError] = useState(null);
+	const [error, setError] = useState(null);   // Load failure: nothing to show
+	const [notice, setNotice] = useState(null); // Save failure: keep the form and unsaved edits
 	const [loading, setLoading] = useState(false);
 	const [saved, setSaved] = useState(false);
 
@@ -13,8 +21,6 @@ const ConfigEditor = () => {
 	const [selectedShops, setSelectedShops] = useState(new Set());
 	const [shopsSaved, setShopsSaved] = useState(false);
 	const [shopsSaving, setShopsSaving] = useState(false);
-
-	const api = axios.create({ withCredentials: true });
 
 	useEffect(() => {
 		api.get('/api/admin/config')
@@ -70,15 +76,26 @@ const ConfigEditor = () => {
 	const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
 	const handleSubmit = async () => {
+		if (!form.event_date) {
+			setNotice('Event date is required');
+			return;
+		}
+		for (const [field, label] of [['game_ttl', 'Game TTL'], ['attendee_ttl', 'Attendee TTL']]) {
+			if (form[field] === '' || !Number.isFinite(Number(form[field])) || Number(form[field]) < 0) {
+				setNotice(`${label} must be a non-negative number of hours`);
+				return;
+			}
+		}
+
 		setLoading(true);
-		setError(null);
+		setNotice(null);
 		setSaved(false);
 		try {
 			await api.put('/api/admin/config', form);
 			setSaved(true);
 			setTimeout(() => setSaved(false), 3000);
 		} catch (err) {
-			setError('Failed to save config');
+			setNotice(err.response?.data?.error || 'Failed to save config');
 		} finally {
 			setLoading(false);
 		}
@@ -102,6 +119,7 @@ const ConfigEditor = () => {
 					</button>
 				</div>
 			</div>
+			<Banner message={notice} onDismiss={() => setNotice(null)} />
 
 			<div className="admin-form admin-form-wide">
 				<h3>Event</h3>
@@ -110,7 +128,7 @@ const ConfigEditor = () => {
 				<input
 					type="datetime-local"
 					value={form.event_date ? new Date(new Date(form.event_date).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
-					onChange={e => set('event_date', new Date(e.target.value).toISOString())}
+					onChange={e => set('event_date', e.target.value ? new Date(e.target.value).toISOString() : null)}
 				/>
 
 				<label>MOTD Title</label>
@@ -143,15 +161,15 @@ const ConfigEditor = () => {
 				<label>Game TTL (hours)</label>
 				<input
 					type="number"
-					value={form.game_ttl / (1000 * 60 * 60)}
-					onChange={e => set('game_ttl', parseFloat(e.target.value) * 1000 * 60 * 60)}
+					value={msToHours(form.game_ttl)}
+					onChange={e => set('game_ttl', hoursToMs(e.target.value))}
 				/>
 
 				<label>Attendee TTL (hours)</label>
 				<input
 					type="number"
-					value={form.attendee_ttl / (1000 * 60 * 60)}
-					onChange={e => set('attendee_ttl', parseFloat(e.target.value) * 1000 * 60 * 60)}
+					value={msToHours(form.attendee_ttl)}
+					onChange={e => set('attendee_ttl', hoursToMs(e.target.value))}
 				/>
 
 				<div className="admin-form-checks">

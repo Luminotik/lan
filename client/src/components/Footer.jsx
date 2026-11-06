@@ -4,7 +4,7 @@ const Footer = () => {
 			<div className="footer-inner">
 				<img
 					className="footer-logo"
-					src="https://luminotik.me/images/lettermark.png"
+					src="/images/lettermark.png"
 					alt="Luminotik"
 				/>
 				<div>

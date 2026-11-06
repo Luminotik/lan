@@ -6,11 +6,15 @@ const Media = ({ config }) => {
 				<br />
 				{config?.use_twitch ? (
 					<div className="embed-twitch">
-						<div id="twitch-embed" />
-						<script src="https://embed.twitch.tv/embed/v1.js" />
-						<script dangerouslySetInnerHTML={{
-							__html: `new Twitch.Embed('twitch-embed', {width: '100%', height: '100%', channel: 'luminotik'})`
-						}} />
+						{/* React doesn't execute <script> tags rendered in JSX, so use Twitch's iframe
+						    player. Twitch requires `parent` to match the hostname serving the page. */}
+						<iframe
+							src={`https://player.twitch.tv/?channel=luminotik&parent=${window.location.hostname}&muted=true`}
+							frameBorder="0"
+							allow="autoplay; fullscreen"
+							allowFullScreen
+							title="Luminotik on Twitch"
+						/>
 					</div>
 				) : (
 					<div className="embed-youtube">

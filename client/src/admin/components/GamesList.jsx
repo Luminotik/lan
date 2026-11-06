@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
+import Banner from './Banner';
 
 import PaginatedList from './PaginatedList';
 
@@ -18,7 +19,7 @@ const emptyGame = {
 	active: true
 };
 
-const GameForm = ({ game, onSave, onCancel, api }) => {
+const GameForm = ({ game, onSave, onCancel }) => {
 	const [form, setForm] = useState(game);
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
@@ -95,7 +96,7 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 			}
 			onSave();
 		} catch (err) {
-			setError('Failed to save game');
+			setError(err.response?.data?.error || 'Failed to save game');
 		} finally {
 			setLoading(false);
 		}
@@ -219,23 +220,22 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 
 const GamesList = () => {
 	const [games, setGames] = useState(null);
-	const [error, setError] = useState(null);
+	const [error, setError] = useState(null);   // Load failure: nothing to show
+	const [notice, setNotice] = useState(null); // Action failure: keep the list visible
 	const [editing, setEditing] = useState(null);
-
-	const api = axios.create({ withCredentials: true });
-
-	useEffect(() => {
-		fetchGames();
-	}, []);
 
 	const fetchGames = async () => {
 		try {
 			const res = await api.get('/api/admin/games');
 			setGames(res.data);
-		} catch (err) {
+		} catch {
 			setError('Failed to load games');
 		}
 	};
+
+	useEffect(() => {
+		fetchGames();
+	}, []);
 
 	const toggleActive = async (game) => {
 		// Optimistically update UI immediately
@@ -253,7 +253,7 @@ const GamesList = () => {
 			setGames(prev => prev.map(g =>
 				g.id === game.id ? { ...g, active: game.active } : g
 			));
-			setError('Failed to update game');
+			setNotice(err.response?.data?.error || 'Failed to update game');
 		}
 	};
 
@@ -263,7 +263,7 @@ const GamesList = () => {
 			await api.delete(`/api/admin/games/${id}`);
 			fetchGames();
 		} catch (err) {
-			setError('Failed to delete game');
+			setNotice(err.response?.data?.error || 'Failed to delete game');
 		}
 	};
 
@@ -282,13 +282,13 @@ const GamesList = () => {
 					game={editing}
 					onSave={handleSave}
 					onCancel={() => setEditing(null)}
-					api={api}
 				/>
 			)}
 			<div className="admin-section-header">
 				<h2>Games</h2>
 				<button className="admin-btn admin-btn-primary" onClick={() => setEditing(emptyGame)}>Add Game</button>
 			</div>
+			<Banner message={notice} onDismiss={() => setNotice(null)} />
 			<PaginatedList
 				items={games}
 				columns={[
