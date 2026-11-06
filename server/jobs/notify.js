@@ -58,11 +58,19 @@ export async function notifyPriceDrops(drops) {
 		}]
 	};
 
+	// Mention non-owners for drops we can check ownership for, and the base
+	// attendee role for drops we can't (no Steam appid). A mixed batch needs both,
+	// otherwise the appid-less games would notify nobody.
+	const mentions = [];
+	const allowed_mentions = { users: [], roles: [] };
+
 	if (discordIds.size > 0) {
 		const ids = [...discordIds];
-		payload.content = ids.map(id => `<@${id}>`).join(' ');
-		payload.allowed_mentions = { users: ids };
-	} else if (needRoleFallback) {
+		mentions.push(...ids.map(id => `<@${id}>`));
+		allowed_mentions.users = ids;
+	}
+
+	if (needRoleFallback) {
 		const { rows: roleRows } = await pool.query(
 			`SELECT	discord_role_ids
 			 FROM	attendee_roles
@@ -71,9 +79,16 @@ export async function notifyPriceDrops(drops) {
 		);
 		const roleId = roleRows[0]?.discord_role_ids?.[0];
 		if (roleId) {
-			payload.content = `<@&${roleId}>`;
-			payload.allowed_mentions = { roles: [roleId] };
+			mentions.push(`<@&${roleId}>`);
+			allowed_mentions.roles = [roleId];
+		} else {
+			logger.alert('Price drop for a game without a Steam appid, but no base attendee role is configured to mention');
 		}
+	}
+
+	if (mentions.length > 0) {
+		payload.content = mentions.join(' ');
+		payload.allowed_mentions = allowed_mentions;
 	}
 
 	await sendChannelMessage(channelId, payload);

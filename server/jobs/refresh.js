@@ -29,6 +29,8 @@ async function getConfig() {
 
 async function syncOwnedGames(steamId) {
 	const appids = await getOwnedGames(steamId);
+	// Intentionally keep the last-known library when Steam returns nothing
+	// (private profile or API hiccup): stale ownership beats none for targeting.
 	if (appids.length === 0) return;
 	await pool.query(
 		`DELETE
