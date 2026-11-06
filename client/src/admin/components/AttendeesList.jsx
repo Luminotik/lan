@@ -14,6 +14,7 @@ const emptyAttendee = {
 };
 
 const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
+	const isNew = !attendee.steam_id; // Captured at open; steam_id gets populated by validation
 	const [form, setForm] = useState(attendee);
 	const [error, setError] = useState(null);
 	const [loading, setLoading] = useState(false);
@@ -82,14 +83,14 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 		setLoading(true);
 		setError(null);
 		try {
-			if (form.steam_id) {
-				await api.put(`/api/admin/attendees/${form.steam_id}`, form);
-			} else {
+			if (isNew) {
 				await api.post('/api/admin/attendees', form);
+			} else {
+				await api.put(`/api/admin/attendees/${form.steam_id}`, form);
 			}
 			onSave();
 		} catch (err) {
-			setError('Failed to save attendee');
+			setError(err.response?.data?.error || 'Failed to save attendee');
 		} finally {
 			setLoading(false);
 		}
@@ -98,7 +99,7 @@ const AttendeeForm = ({ attendee, onSave, onCancel, api }) => {
 	return (
 		<div className="admin-modal-overlay">
 			<div className="admin-modal">
-				<h2>{form.steam_id ? 'Edit Attendee' : 'Add Attendee'}</h2>
+				<h2>{isNew ? 'Add Attendee' : 'Edit Attendee'}</h2>
 				<div className="admin-form">
 					{!validated ? (
 						<>
