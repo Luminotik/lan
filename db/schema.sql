@@ -30,6 +30,9 @@ CREATE TABLE public.api_discord (
     server_id text NOT NULL,
     url_member_role text NOT NULL,
     url_member text NOT NULL,
+    url_private_message text,
+    url_channel_message text,
+    admin_user_id text,
     notification_channel_id text DEFAULT ''::text NOT NULL
 );
 
@@ -42,6 +45,8 @@ CREATE TABLE public.api_itad (
     api_key text NOT NULL,
     url_lookup_game text NOT NULL,
     url_get_current_prices text NOT NULL,
+    url_get_shops text,
+    url_search_games text,
     country character varying(2) NOT NULL,
     trusted_shops text NOT NULL
 );
@@ -54,7 +59,8 @@ CREATE TABLE public.api_itad (
 CREATE TABLE public.api_steam (
     api_key text NOT NULL,
     url_get_app_details text NOT NULL,
-    url_get_player_summaries text NOT NULL
+    url_get_player_summaries text NOT NULL,
+    url_get_owned_games text
 );
 
 
@@ -67,6 +73,16 @@ CREATE TABLE public.attendee_roles (
     label character varying(50) NOT NULL,
     discord_role_ids text[],
     is_base boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: attendee_owned_games; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.attendee_owned_games (
+    steam_id character varying(20) NOT NULL,
+    steam_appid character varying(20) NOT NULL
 );
 
 
@@ -195,6 +211,14 @@ ALTER TABLE ONLY public.attendee_roles
 
 
 --
+-- Name: attendee_owned_games attendee_owned_games_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attendee_owned_games
+    ADD CONSTRAINT attendee_owned_games_pkey PRIMARY KEY (steam_id, steam_appid);
+
+
+--
 -- Name: attendees attendees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -224,6 +248,14 @@ ALTER TABLE ONLY public.games
 
 ALTER TABLE ONLY public.attendees
     ADD CONSTRAINT attendees_role_fkey FOREIGN KEY (role) REFERENCES public.attendee_roles(role);
+
+
+--
+-- Name: attendee_owned_games attendee_owned_games_steam_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attendee_owned_games
+    ADD CONSTRAINT attendee_owned_games_steam_id_fkey FOREIGN KEY (steam_id) REFERENCES public.attendees(steam_id) ON DELETE CASCADE;
 
 
 --
