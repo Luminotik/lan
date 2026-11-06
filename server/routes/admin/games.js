@@ -4,6 +4,7 @@ import pool from '../../db.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { lookupItadId, getBestDeal } from '../../lib/itad.js';
 import { getAppDetails } from '../../lib/steam.js';
+import { toNumberOrNull, toIntOrNull, withPrices } from '../../lib/numbers.js';
 import { createLogger } from '../../lib/logger.js';
 const logger = createLogger('admin/games');
 
@@ -33,11 +34,7 @@ router.get('/', async (req, res) => {
 						price_new ASC, 
 						name ASC`
 		);
-		res.json(result.rows.map(game => ({
-			...game,
-			price_old: parseFloat(game.price_old),
-			price_new: parseFloat(game.price_new)
-		})));
+		res.json(result.rows.map(withPrices));
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
@@ -78,14 +75,9 @@ router.post('/', async (req, res) => {
 						priority,
 						active,
 						last_update`,
-			[steam_appid, itad_id, name, header_image, is_free, is_gamepass, gamepass_url, url, price_old, price_new, priority, active]
+			[steam_appid, itad_id, name, header_image, is_free, is_gamepass, gamepass_url, url, toNumberOrNull(price_old), toNumberOrNull(price_new), toIntOrNull(priority) ?? 999, active]
 		);
-		const game = result.rows[0];
-		res.status(201).json({
-			...game,
-			price_old: parseFloat(game.price_old),
-			price_new: parseFloat(game.price_new)
-		});
+		res.status(201).json(withPrices(result.rows[0]));
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
@@ -124,17 +116,12 @@ router.put('/:id', async (req, res) => {
 						priority,
 						active,
 						last_update`,
-			[steam_appid, itad_id, name, header_image, is_free, is_gamepass, gamepass_url, url, price_old, price_new, priority, active, req.params.id]
+			[steam_appid, itad_id, name, header_image, is_free, is_gamepass, gamepass_url, url, toNumberOrNull(price_old), toNumberOrNull(price_new), toIntOrNull(priority) ?? 999, active, req.params.id]
 		);
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Game not found' });
 		}
-		const game = result.rows[0];
-		res.json({
-			...game,
-			price_old: parseFloat(game.price_old),
-			price_new: parseFloat(game.price_new)
-		});
+		res.json(withPrices(result.rows[0]));
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
@@ -184,8 +171,8 @@ router.post('/lookup', async (req, res) => {
 			header_image: steam.header_image,
 			is_free: steam.is_free,
 			url: deal?.url ?? `https://store.steampowered.com/app/${steam_appid}/`,
-			price_old: deal?.price_old,
-			price_new: deal?.price_new
+			price_old: deal?.price_old ?? null,
+			price_new: deal?.price_new ?? null
 		});
 	} catch (err) {
 		logger.error('lookup', err);

@@ -1,6 +1,7 @@
 import express from 'express';
 
 import pool from '../db.js';
+import { withPrices } from '../lib/numbers.js';
 import { createLogger } from '../lib/logger.js';
 const logger = createLogger('games');
 
@@ -31,11 +32,7 @@ router.get('/', async (req, res) => {
 						price_new ASC,
 						name ASC`
 		);
-		res.json(result.rows.map(game => ({
-			...game,
-			price_old: parseFloat(game.price_old),
-			price_new: parseFloat(game.price_new)
-		})));
+		res.json(result.rows.map(withPrices));
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({ error: 'Database error' });
@@ -69,12 +66,7 @@ router.get('/:id', async (req, res) => {
 		if (result.rows.length === 0) {
 			return res.status(404).json({ error: 'Game not found' });
 		}
-		const game = result.rows[0];
-		res.json({
-			...game,
-			price_old: parseFloat(game.price_old),
-			price_new: parseFloat(game.price_new)
-		});
+		res.json(withPrices(result.rows[0]));
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({ error: 'Database error' });

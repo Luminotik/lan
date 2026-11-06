@@ -17,7 +17,11 @@ const GameCard = ({ game }) => {
 				</div>
 			);
 		}
-		if (game.price_new < game.price_old) {
+		// No price on record (e.g. manually added, not tracked on ITAD): show nothing rather than crash
+		if (game.price_new === null || game.price_new === undefined) {
+			return null;
+		}
+		if (game.price_old !== null && game.price_old !== undefined && game.price_new < game.price_old) {
 			return (
 				<>
 					<div className="game-detail-price-old"><span>{game.price_old.toFixed(2)}</span></div>

@@ -3,6 +3,7 @@ import { notifyPriceDrops } from './notify.js';
 import { lookupItadId, getBestDeal } from '../lib/itad.js';
 import { getAppDetails, getPlayerSummaries, getOwnedGames } from '../lib/steam.js';
 import { createLogger } from '../lib/logger.js';
+import { toNumberOrNull } from '../lib/numbers.js';
 const logger = createLogger('refresh');
 
 async function getConfig() {
@@ -89,21 +90,22 @@ export async function refreshGames() {
 			}
 
 			// ITAD refresh
-			let url = game.url, priceOld = parseFloat(game.price_old), priceNew = parseFloat(game.price_new);
+			let url = game.url, priceOld = toNumberOrNull(game.price_old), priceNew = toNumberOrNull(game.price_new);
 
 			if (game.itad_id) {
 				const deal = await getBestDeal(game.itad_id);
 
 				if (deal) {
 					url = deal.url;
-					priceOld = deal.price_old;
-					priceNew = deal.price_new;
+					priceOld = toNumberOrNull(deal.price_old);
+					priceNew = toNumberOrNull(deal.price_new);
 					if (priceNew === 0) isFree = true;
 				}
 			}
 
-			const existingPriceNew = parseFloat(game.price_new);
-			if (game.active && priceNew < existingPriceNew) {
+			const existingPriceNew = toNumberOrNull(game.price_new);
+			// Both must be real numbers: null < 5 is true in JS, which would report a bogus drop
+			if (game.active && priceNew !== null && existingPriceNew !== null && priceNew < existingPriceNew) {
 				drops.push({ name, price_new: priceNew, price_old: existingPriceNew, steam_appid: game.steam_appid });
 			}
 

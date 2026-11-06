@@ -186,7 +186,7 @@ const GameForm = ({ game, onSave, onCancel, api }) => {
 							<input type="number" value={form.price_new ?? ''} onChange={e => set('price_new', e.target.value)} />
 
 							<label>Priority</label>
-							<input type="number" value={form.priority ?? 999} onChange={e => set('priority', parseInt(e.target.value))} />
+							<input type="number" value={form.priority ?? 999} onChange={e => set('priority', e.target.value === '' ? '' : parseInt(e.target.value))} />
 
 							<div className="admin-form-checks">
 								<label><input type="checkbox" checked={form.is_free || false} onChange={e => set('is_free', e.target.checked)} /> Free</label>
@@ -311,7 +311,8 @@ const GamesList = () => {
 						<td data-label="Price">
 							{game.is_free ? 'Free' :
 								game.is_gamepass ? 'Game Pass' :
-									`$${game.price_new.toFixed(2)}`}
+									game.price_new === null ? '—' :
+										`$${game.price_new.toFixed(2)}`}
 						</td>
 						<td data-label="Active">
 							<button
