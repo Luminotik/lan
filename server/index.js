@@ -27,6 +27,10 @@ registerAlertFn(sendAdminAlert);
 dotenv.config();
 
 const app = express();
+
+// Behind Traefik: trust one proxy hop so req.ip is the real client IP
+// (required for per-client login rate limiting and accurate login-failure logs)
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,6 +56,11 @@ app.use('/api/admin/config', adminConfigRouter);
 app.use('/api/admin/notify', adminNotifyRouter);
 app.use('/api/admin/itad', adminItadRouter);
 
+// Unknown API routes return JSON 404s instead of falling through to index.html
+app.use('/api', (req, res) => {
+	res.status(404).json({ error: 'Not found' });
+});
+
 app.use(express.static(join(__dirname, '../client/dist')));
 
 app.get('/{*path}', (req, res) => {
@@ -63,8 +72,22 @@ app.listen(PORT, () => {
 	logger.alert(`Server started on port ${PORT}`);
 });
 
+// Run a job only if its previous run has finished, so a slow run (many stale
+// records, rate-limit backoff) can't overlap the next tick and double-notify.
+const running = new Set();
+function runExclusive(name, job) {
+	if (running.has(name)) {
+		logger.warn(`${name} still running from previous tick, skipping`);
+		return;
+	}
+	running.add(name);
+	job()
+		.catch(err => logger.alert(`Unhandled error in ${name}`, err))
+		.finally(() => running.delete(name));
+}
+
 // Run refresh every minute
 cron.schedule('* * * * *', () => {
-	refreshGames().catch(err => logger.alert('Unhandled error in refreshGames', err));
-	refreshAttendees().catch(err => logger.alert('Unhandled error in refreshAttendees', err));
+	runExclusive('refreshGames', refreshGames);
+	runExclusive('refreshAttendees', refreshAttendees);
 });

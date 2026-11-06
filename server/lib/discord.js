@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import pool from '../db.js';
 import { createLogger } from './logger.js';
 const logger = createLogger('discord');
@@ -49,8 +48,10 @@ async function rolesForLanRole(lanRole) {
 // Centralized Discord API request handler.
 // - Waits until rateLimitResetAt before making a request if we've hit the limit.
 // - Updates rateLimitResetAt based on response headers.
-// - Retries on 429 with exponential backoff (up to 3 attempts).
-async function discordRequest(url, options = {}, attempt = 1) {
+// - Retries on 429 using Discord's Retry-After (up to 3 attempts).
+// - quiet: log failures instead of alerting. Used by the alert path itself so
+//   a failing alert can't trigger another alert (infinite recursion).
+async function discordRequest(url, options = {}, { quiet = false, attempt = 1 } = {}) {
 	// Wait if we're preemptively rate-limited
 	const now = Date.now();
 	if (rateLimitResetAt > now) {
@@ -83,19 +84,20 @@ async function discordRequest(url, options = {}, attempt = 1) {
 		const retryAfter = parseFloat(res.headers.get('retry-after') ?? '1');
 
 		if (attempt > 3) {
-			logger.alert(`Rate limited after 3 retries on ${url}, giving up`);
+			const msg = `Rate limited after 3 retries on ${url}, giving up`;
+			quiet ? logger.error(msg) : logger.alert(msg);
 			return res;
 		}
 
 		logger.warn(`Rate limited, waiting ${retryAfter}s before retry ${attempt}/3`);
 		await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-		return discordRequest(url, options, attempt + 1);
+		return discordRequest(url, options, { quiet, attempt: attempt + 1 });
 	}
 
 	return res;
 }
 
-// Assign a set of Discord roles to a user.
+// Add (PUT) or remove (DELETE) a single role. Returns an error string on failure, null on success.
 async function modifyRole(discord_id, role_id, method) {
 	const config = await getDiscordConfig();
 	const url = config.url_member_role
@@ -107,73 +109,70 @@ async function modifyRole(discord_id, role_id, method) {
 
 	if (!res.ok && res.status !== 204) {
 		const body = await res.text();
-		logger.error(`Failed to ${method} role ${role_id} on ${discord_id}: ${res.status} ${body}`);
+		return `${method} role ${role_id}: ${res.status} ${body}`;
 	}
+	return null;
 }
 
-// Add a new role to a user
-async function addRoles(discord_id, role_ids) {
-	if (!discord_id || role_ids.length === 0) return;
+// Apply a set of role changes, attempting every one even if some fail. Returns failure strings.
+async function modifyRoles(discord_id, role_ids, method) {
+	const failures = [];
 	for (const role_id of role_ids) {
-		await modifyRole(discord_id, role_id, 'PUT');
+		const failure = await modifyRole(discord_id, role_id, method);
+		if (failure) failures.push(failure);
 	}
-}
-
-// Remove an existing role from a user
-async function removeRoles(discord_id, role_ids) {
-	if (!discord_id || role_ids.length === 0) return;
-	for (const role_id of role_ids) {
-		await modifyRole(discord_id, role_id, 'DELETE');
-	}
-}
-
-// Remove all three LAN roles from a user (used when they become inactive or are deleted).
-async function removeAllLanRoles(discord_id) {
-	if (!discord_id) return;
-	const allRoleIds = await getAllLanDiscordRoleIds();
-	await removeRoles(discord_id, allRoleIds);
+	return failures;
 }
 
 // Sync Discord roles for a single attendee based on their current state.
 // - Active: assigns roles matching their LAN role per the mappings
-// - Inactive or no discord_id: removes all LAN roles
+// - Inactive: removes all LAN roles
+// - No discord_id: nothing to do
+// Throws if any role change failed, after attempting all of them.
 export async function syncAttendeeRoles(attendee) {
 	if (!attendee.discord_id) return;
 
-	if (!attendee.active) {
-		await removeAllLanRoles(attendee.discord_id);
-		return;
-	}
-
 	const [targetRoles, allRoleIds] = await Promise.all([
-		rolesForLanRole(attendee.role),
+		attendee.active ? rolesForLanRole(attendee.role) : Promise.resolve([]),
 		getAllLanDiscordRoleIds()
 	]);
 	const toRemove = allRoleIds.filter(id => !targetRoles.includes(id));
 
-	await removeRoles(attendee.discord_id, toRemove);
-	await addRoles(attendee.discord_id, targetRoles);
+	const failures = [
+		...await modifyRoles(attendee.discord_id, toRemove, 'DELETE'),
+		...await modifyRoles(attendee.discord_id, targetRoles, 'PUT')
+	];
+
+	if (failures.length > 0) {
+		throw new Error(`Discord role sync failed for ${attendee.discord_id}: ${failures.join('; ')}`);
+	}
 }
 
 // Send a message to a Discord channel.
-export async function sendChannelMessage(channelId, payload) {
+// quiet: throw on failure instead of alerting (used by the alert path itself).
+export async function sendChannelMessage(channelId, payload, { quiet = false } = {}) {
 	const config = await getDiscordConfig();
 	if (!config.url_channel_message) {
-		logger.error('url_channel_message is not configured in api_discord');
+		const msg = 'url_channel_message is not configured in api_discord';
+		if (quiet) throw new Error(msg);
+		logger.alert(msg);
 		return;
 	}
 	const url = config.url_channel_message.replace('{channel_id}', channelId);
 	const res = await discordRequest(url, {
 		method: 'POST',
 		body: JSON.stringify(payload)
-	});
+	}, { quiet });
 	if (!res.ok) {
 		const body = await res.text();
-		logger.alert(`Failed to send channel message to ${channelId}: ${res.status} ${body}`);
+		const msg = `Failed to send channel message to ${channelId}: ${res.status} ${body}`;
+		if (quiet) throw new Error(msg);
+		logger.alert(msg);
 	}
 }
 
-// Send a DM alert to the configured admin user.
+// Send a DM alert to the configured admin user. Throws on failure; the logger
+// catches it and writes it to the log rather than alerting again.
 export async function sendAdminAlert(message) {
 	const config = await getDiscordConfig();
 	if (!config.admin_user_id || !config.url_private_message) return;
@@ -181,11 +180,15 @@ export async function sendAdminAlert(message) {
 	const dmRes = await discordRequest(config.url_private_message, {
 		method: 'POST',
 		body: JSON.stringify({ recipient_id: config.admin_user_id })
-	});
-	if (!dmRes.ok) return;
+	}, { quiet: true });
+	if (!dmRes.ok) {
+		throw new Error(`Failed to open DM channel: ${dmRes.status} ${await dmRes.text()}`);
+	}
 
 	const dm = await dmRes.json();
-	await sendChannelMessage(dm.id, { content: message });
+	// Discord caps message content at 2000 characters; stack traces can exceed it
+	const content = message.length > 1990 ? message.slice(0, 1990) + '…' : message;
+	await sendChannelMessage(dm.id, { content }, { quiet: true });
 }
 
 // Validate membership of a user in the Discord server.
